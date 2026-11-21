@@ -21,6 +21,30 @@ for (const p of perms) { const name = p.match(/name="([^"]+)"/)[1]; if (!man.inc
 if (!man.includes('requestLegacyExternalStorage')) man = man.replace('<application', '<application\n        android:requestLegacyExternalStorage="true"');
 // keep video playing through rotation without reloading
 man = man.replace(/android:configChanges="[^"]*"/, 'android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|locale|uiMode|navigation|density"');
+// "Open with" support: register MeyPlayer as a viewer for video and audio files
+if (!man.includes('MEYPLAYER_OPEN_WITH')) {
+  const filters = ['video', 'audio'].map(t => `
+            <!-- MEYPLAYER_OPEN_WITH ${t} -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="${t}/*" />
+            </intent-filter>`).join('') + `
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/x-matroska" />
+                <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>`;
+  // insert into the main activity, right after its launcher intent-filter
+  man = man.replace(/(<category android:name="android.intent.category.LAUNCHER"\s*\/>\s*<\/intent-filter>)/, `$1${filters}`);
+  if (!man.includes('MEYPLAYER_OPEN_WITH')) throw new Error('Could not add Open-with intent filters to AndroidManifest.xml');
+}
 fs.writeFileSync(manPath, man);
 
 // 2) MainActivity — ask for media permission on first launch, then trigger a rescan

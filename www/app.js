@@ -388,7 +388,7 @@ function renderMe() {
       <div class="row" id="mPriv"><div class="thumb sq" style="color:#2563eb">${ic('shield')}</div><div class="meta"><div class="name">Privacy folder</div><div class="sub">${S.hidden.size} hidden · PIN protected</div></div>${ic('chev')}</div>
       <div class="row" id="mSet"><div class="thumb sq" style="color:#64748b">${ic('gear')}</div><div class="meta"><div class="name">Settings</div><div class="sub">Theme, scan folders, playback</div></div>${ic('chev')}</div>
       <div class="row" id="mTut"><div class="thumb sq" style="color:#f59e0b">${ic('bulb')}</div><div class="meta"><div class="name">Gesture tutorial</div><div class="sub">Learn player controls</div></div>${ic('chev')}</div>
-      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.3.0 · Owner & developer: Kamil</div></div>${ic('chev')}</div>
+      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.3.1 · Owner & developer: Kamil</div></div>${ic('chev')}</div>
     </div>`;
   $('#mPriv').onclick = () => { subView = 'privacy'; render(); };
   $('#mSet').onclick = () => { subView = 'settings'; render(); };
@@ -956,7 +956,7 @@ video.addEventListener('loadedmetadata', renderPlaylistPanel);
 
 
 /* ================= Right-click / ☰ menu (KMPlayer style) ================= */
-const VER = '1.3.0';
+const VER = '1.3.1';
 function aboutSheet(dark) {
   sheet(`<div class="sheet-h">About MeyPlayer</div>
     <div style="padding:0 20px 6px;text-align:center"><img src="assets/logo.png" style="width:96px;border-radius:24px;box-shadow:0 8px 24px rgba(80,60,255,.35)">
@@ -1287,6 +1287,25 @@ if (isAndroid && Cap.Plugins.App) Cap.Plugins.App.addListener('backButton', () =
   if (tab !== 'local') return switchTab('local');
   Cap.Plugins.App.minimizeApp ? Cap.Plugins.App.minimizeApp() : Cap.Plugins.App.exitApp();
 });
+/* Android "Open with MeyPlayer" from a file manager / other apps */
+function openExternalUri(url) {
+  if (!url || !/^(content|file):/i.test(url)) return;
+  let dec = url; try { dec = decodeURIComponent(decodeURIComponent(url)); } catch { try { dec = decodeURIComponent(url); } catch {} }
+  let real = '';
+  const mPrim = dec.match(/primary:(.+)$/); if (mPrim) real = '/storage/emulated/0/' + mPrim[1];
+  const mSt = dec.match(/(\/storage\/[^?#]+)/); if (!real && mSt) real = mSt[1];
+  if (!real && url.startsWith('file://')) real = dec.replace(/^file:\/\//, '');
+  const known = real && byPath(real);
+  if (known) return openPlayer(known, sorted(visible().filter(x => x.folder === known.folder && x.kind === known.kind)));
+  let name = (real || dec).split(/[\/:]/).pop().split('?')[0] || 'Video';
+  const k = kindOf(name) || (/audio/i.test(dec) ? 'audio' : 'video'); if (!kindOf(name)) name = name + '';
+  const m = { path: real || url, uri: url, name, folder: real ? dirOf(real) : 'Opened files', kind: k === 'sub' ? 'video' : k, size: 0, mtime: Date.now() };
+  openPlayer(m, [m]);
+}
+if (isAndroid && Cap.Plugins.App) {
+  Cap.Plugins.App.addListener('appUrlOpen', e => openExternalUri(e && e.url));
+  Cap.Plugins.App.getLaunchUrl().then(r => { if (r && r.url) setTimeout(() => openExternalUri(r.url), 300); }).catch(() => {});
+}
 if (isAndroid && Cap.Plugins.App) Cap.Plugins.App.addListener('resume', () => { if (!P.open) rescan(true); });
 if (isElectron) meyAPI.onOpenFile(ps => openPaths(ps));
 addEventListener('beforeunload', saveProgress);

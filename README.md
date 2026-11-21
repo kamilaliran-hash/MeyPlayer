@@ -1,7 +1,7 @@
 # MeyPlayer
 
 **App owner & developer:** Kamil  
-**Version:** 1.3.0
+**Version:** 1.3.1
 
 Offline video & music player for **Windows (.exe installer + portable)** and **Android (.apk)**, built from one shared UI (`www/`).
 
@@ -9,9 +9,9 @@ Offline video & music player for **Windows (.exe installer + portable)** and **A
 1. Create a free GitHub repository and upload everything in this folder (keep the `.github` folder).
 2. Open the **Actions** tab. The *Build MeyPlayer* workflow starts by itself (or click **Run workflow**).
 3. After ~10 minutes, open the finished run and download:
-   - **MeyPlayer-Windows** → `MeyPlayer-Setup-1.3.0.exe` (installer) and `MeyPlayer-Portable-1.3.0.exe`
-   - **MeyPlayer-Android** → `MeyPlayer-1.3.0.apk`
-4. To publish a GitHub Release with the files attached, push a tag such as `v1.3.0`.
+   - **MeyPlayer-Windows** → `MeyPlayer-Setup-1.3.1.exe` (installer) and `MeyPlayer-Portable-1.3.1.exe`
+   - **MeyPlayer-Android** → `MeyPlayer-1.3.1.apk`
+4. To publish a GitHub Release with the files attached, push a tag such as `v1.3.1`.
 
 Android: allow "Install unknown apps" for your browser/file manager, then open the APK. Allow media access on first launch.
 Windows: SmartScreen may warn because the exe is unsigned. Click **More info → Run anyway**.
@@ -43,3 +43,7 @@ MeyPlayer is owned by **Kamil**. © 2026 Kamil. All rights reserved.
 ## Main menu (right-click on the video, long-press on Android, or the ☰ button at bottom left)
 Quick Open File (Ctrl+O) · File · Recent Files · Play · View · Video · Audio · Subtitles · Video Track · Audio Track · Subtitle Track · Navigate · Capture · Filters · Playlists · Options (F2) · Properties (Alt+J) · Exit (Alt+F4) · Favorites · Help → Keyboard Shortcuts / Gesture Tutorial / About MeyPlayer.
 The ⓘ button in the top bar (library and player) also opens About MeyPlayer — owner & developer: Kamil.
+
+## Open with MeyPlayer
+- Android: MeyPlayer registers itself as a video/audio viewer, so it appears in the "Open with" list of file managers, Downloads, WhatsApp, etc. (requires installing a build made from version 1.3.1 or later).
+- Windows: the installer adds MeyPlayer to "Open with" for common video and audio formats.
