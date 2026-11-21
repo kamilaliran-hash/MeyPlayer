@@ -9,6 +9,7 @@ const ext = n => (n.split('.').pop() || '').toLowerCase();
 const kindOf = n => VIDEO_EXT.includes(ext(n)) ? 'video' : AUDIO_EXT.includes(ext(n)) ? 'audio' : SUB_EXT.includes(ext(n)) ? 'sub' : null;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtT = s => { if (!isFinite(s) || s < 0) s = 0; s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; const p = n => String(n).padStart(2,'0'); return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`; };
+const fmtHMS = s => { if (!isFinite(s) || s < 0) s = 0; s = Math.floor(s); const p = n => String(n).padStart(2, '0'); return `${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}`; };
 const fmtSize = b => !b ? '' : b > 1073741824 ? (b/1073741824).toFixed(2)+' GB' : b > 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
 const fmtDate = t => t ? new Date(t).toLocaleString() : '';
 const baseName = p => p.split(/[\\/]/).pop();
@@ -63,6 +64,10 @@ const I = {
   share:'<path d="M14 5l7 6-7 6v-4c-5 0-8 1.5-11 5 1-5 4-9 11-10z"/>',
   bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
   chev:'<path d="M9 5l7 7-7 7"/>',
+  chevl:'<path d="M15 5l-7 7 7 7"/>',
+  up:'<path d="M6 15l6-6 6 6"/>',
+  down:'<path d="M6 9l6 6 6-6"/>',
+  minus:'<path d="M5 12h14"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 0 1 4 0V11"/>',
@@ -74,6 +79,20 @@ const I = {
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   check:'<path d="M5 12l5 5L20 7"/>',
 };
+Object.assign(I, {
+  listbox:'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h8"/>',
+  lockbar:'<rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  goggles:'<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M10 17l2-3 2 3"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/>',
+  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  capture:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/>',
+  eject:'<path d="M12 5l7 8H5z"/><path d="M5 18h14"/>',
+  prevo:'<path d="M6 5v14"/><path d="M18 5.5v13L9 12z"/>',
+  nexto:'<path d="M18 5v14"/><path d="M6 5.5v13L15 12z"/>',
+  playo:'<path d="M7 4.5v15L19.5 12z"/>',
+  pauseo:'<path d="M8 5v14M16 5v14"/>',
+  stopo:'<rect x="6" y="6" width="12" height="12" rx="1"/>',
+  subbox:'<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M7 14h4M13 14h4M7 11h10"/>',
+});
 const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24">${I[n]||''}</svg>`;
 const paintIcons = (root=document) => $$('[data-icon]', root).forEach(el => { if (!el.dataset.painted) { el.innerHTML = ic(el.dataset.icon) + el.innerHTML; el.dataset.painted = 1; }});
 const setIcon = (el, n) => { el.dataset.icon = n; el.innerHTML = ic(n); };
@@ -95,7 +114,7 @@ const S = {
   folders: store.get('folders', []),
   settings: Object.assign({ dark:false, resume:true, sort:'date', speed:1, bgPlay:false, night:false,
     tools:['night','custom','shuffle','loop','mute','sleep','ab','effect','eq','speed','shot','bg','rotate'],
-    eq:[0,0,0,0,0,0,0,0,0,0], eqPreset:'Normal', bass:0, boost:100, reverb:0, cueSize:22, disp:{b:100,c:100,s:100} }, store.get('settings', {})),
+    eq:[0,0,0,0,0,0,0,0,0,0], eqPreset:'Normal', eqOn:true, fxOn:true, bass:0, virt:0, boost:100, reverbPreset:'None', toolHide:'', cueSize:22, disp:{b:100,c:100,s:100} }, store.get('settings', {})),
 };
 const save = k => {
   const v = S[k]; store.set(k, v instanceof Set ? [...v] : v);
@@ -126,14 +145,15 @@ const Plat = {
     $('#inFolder').click(); return false;
   },
   async saveData(name, blob) {
-    if (isElectron) { const p = await meyAPI.saveFile(name, new Uint8Array(await blob.arrayBuffer())); return p; }
+    if (isElectron) { const p = await meyAPI.saveFile(name, new Uint8Array(await blob.arrayBuffer())); return { where: dirOf(p), path: p }; }
     if (isAndroid) {
       const FS = Cap.Plugins.Filesystem;
       const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(blob); });
       const res = await FS.writeFile({ path: 'MeyPlayer/' + name, data, directory: 'DOCUMENTS', recursive: true });
-      return 'Documents/MeyPlayer/' + name + (res ? '' : '');
+      return { where: 'Documents/MeyPlayer', uri: res && res.uri, path: res && res.uri ? res.uri.replace(/^file:\/\//, '') : '' };
     }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); return 'Downloads/' + name;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    return { where: 'Downloads', file: new File([blob], name, { type: blob.type }) };
   },
   async share(m) {
     if (isElectron) { meyAPI.showItem(m.path); return; }
@@ -366,12 +386,12 @@ function renderMe() {
       <div class="row" id="mPriv"><div class="thumb sq" style="color:#2563eb">${ic('shield')}</div><div class="meta"><div class="name">Privacy folder</div><div class="sub">${S.hidden.size} hidden · PIN protected</div></div>${ic('chev')}</div>
       <div class="row" id="mSet"><div class="thumb sq" style="color:#64748b">${ic('gear')}</div><div class="meta"><div class="name">Settings</div><div class="sub">Theme, scan folders, playback</div></div>${ic('chev')}</div>
       <div class="row" id="mTut"><div class="thumb sq" style="color:#f59e0b">${ic('bulb')}</div><div class="meta"><div class="name">Gesture tutorial</div><div class="sub">Learn player controls</div></div>${ic('chev')}</div>
-      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.0.0 · Owner: Kamil</div></div>${ic('chev')}</div>
+      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.2.0 · Owner: Kamil</div></div>${ic('chev')}</div>
     </div>`;
   $('#mPriv').onclick = () => { subView = 'privacy'; render(); };
   $('#mSet').onclick = () => { subView = 'settings'; render(); };
   $('#mTut').onclick = () => toast('Open any video, then tap ⋮ → Tutorial');
-  $('#mAbout').onclick = () => sheet(`<div class="sheet-h">About MeyPlayer</div><div style="padding:0 20px 10px;text-align:center"><img src="assets/logo.png" style="width:90px;border-radius:22px"><p>Version 1.0.0<br>Offline video & music player for Windows and Android.</p></div><table class="info"><tr><td>App owner</td><td>Kamil</td></tr><tr><td>Version</td><td>1.0.0</td></tr><tr><td>Platforms</td><td>Windows, Android</td></tr><tr><td>Running on</td><td>${Plat.name}</td></tr></table><p style="text-align:center;color:var(--sub);font-size:13px">© ${new Date().getFullYear()} Kamil. All rights reserved.</p>`);
+  $('#mAbout').onclick = () => sheet(`<div class="sheet-h">About MeyPlayer</div><div style="padding:0 20px 10px;text-align:center"><img src="assets/logo.png" style="width:90px;border-radius:22px"><p>Version 1.2.0<br>Offline video & music player for Windows and Android.</p></div><table class="info"><tr><td>App owner</td><td>Kamil</td></tr><tr><td>Version</td><td>1.2.0</td></tr><tr><td>Platforms</td><td>Windows, Android</td></tr><tr><td>Running on</td><td>${Plat.name}</td></tr></table><p style="text-align:center;color:var(--sub);font-size:13px">© ${new Date().getFullYear()} Kamil. All rights reserved.</p>`);
 }
 let privUnlocked = false;
 function renderPrivacy() {
@@ -464,7 +484,7 @@ function sheet(html, bind, dark) {
   if (bind) bind($('#sheetBody'));
   P.keepControls = true;
 }
-function closeSheet() { $('#sheet').classList.add('hidden'); $('#sheetBack').classList.add('hidden'); P.keepControls = false; if (P.open) poke(); }
+function closeSheet() { $('#sheet').classList.add('hidden'); $('#sheetBack').classList.add('hidden'); P.keepControls = !$('#plPanel').classList.contains('hidden'); if (P.open) poke(); }
 $('#sheetBack').onclick = closeSheet;
 let toastT; function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2200); }
 
@@ -474,51 +494,97 @@ const P = { open: false, media: null, queue: [], idx: 0, loop: 'off', shuffle: f
   aspect: 0, rotate: 0, locked: false, keepControls: false, orient: 'auto', audio: null, subCues: [], subOffset: 0, track: null };
 const ASPECTS = ['Fit', 'Fill', 'Stretch', '16:9', '4:3', '100%'];
 const TOOLS = {
-  night: ['night', 'Night Mode', () => { S.settings.night = !S.settings.night; save('settings'); applyNight(); toast('Night mode ' + (S.settings.night ? 'on' : 'off')); }, () => S.settings.night],
+  night: ['night', 'Night Mode', toggleNight, () => S.settings.night],
   custom: ['edit', 'Customise Items', customiseTools],
-  shuffle: ['shuffle', 'Shuffle', () => { P.shuffle = !P.shuffle; toast('Shuffle ' + (P.shuffle ? 'on' : 'off')); }, () => P.shuffle],
-  loop: ['loop', 'Loop', cycleLoop, () => P.loop !== 'off'],
-  mute: ['mute', 'Mute', () => { video.muted = !video.muted; toast(video.muted ? 'Muted' : 'Sound on'); }, () => video.muted],
-  sleep: ['timer', 'Sleep Timer', sleepMenu, () => !!(P.sleepAt || P.sleepEnd)],
-  ab: ['ab', 'A - B Repeat', abRepeat, () => P.ab[0] != null],
-  effect: ['wave', 'Audio Effect', effectMenu, () => S.settings.bass || S.settings.reverb || S.settings.boost !== 100],
-  eq: ['eq', 'Equalizer', eqMenu, () => S.settings.eq.some(x => x)],
-  speed: [null, 'Speed', speedMenu],
+  shuffle: ['shuffle', 'Shuffle', () => { P.shuffle = !P.shuffle; toast(P.shuffle ? 'Shuffle on' : 'Shuffle off'); }, () => P.shuffle],
+  loop: [() => P.loop === 'one' ? 'loop1' : 'loop', () => ({ off: 'Loop', all: 'Loop All', one: 'Loop One' })[P.loop], cycleLoop, () => P.loop !== 'off'],
+  mute: [() => video.muted ? 'mute' : 'vol', () => video.muted ? 'Unmute' : 'Mute', () => { video.muted = !video.muted; toast(video.muted ? 'Muted' : 'Sound on'); }, () => video.muted],
+  sleep: ['timer', () => P.sleepAt ? fmtT((P.sleepAt - Date.now()) / 1000) : P.sleepEnd ? 'End of video' : 'Sleep Timer', sleepMenu, () => !!(P.sleepAt || P.sleepEnd)],
+  ab: ['ab', 'A - B Repeat', toggleABBar, () => P.ab[0] != null || !$('#abBar').classList.contains('hidden')],
+  effect: ['wave', 'Audio Effect', effectMenu, () => fxActive()],
+  eq: ['eq', 'Equalizer', eqMenu, () => S.settings.eqOn && S.settings.eq.some(x => x)],
+  speed: [null, 'Speed', speedMenu, () => video.playbackRate !== 1],
   shot: ['camera', 'Screenshot', screenshot],
-  bg: ['headphones', 'Background Play', () => { S.settings.bgPlay = !S.settings.bgPlay; save('settings'); toast('Background play ' + (S.settings.bgPlay ? 'on' : 'off')); }, () => S.settings.bgPlay],
-  rotate: ['rotate', 'Screen Rotation', rotateScreen, () => P.orient !== 'auto' || P.rotate],
+  bg: ['headphones', 'Background Play', enterBackground],
+  rotate: ['rotate', () => isAndroid ? ({ auto: 'Screen Rotation', landscape: 'Landscape', portrait: 'Portrait' })[P.orient] : P.rotate ? `Rotate ${P.rotate}°` : 'Screen Rotation', rotateScreen, () => P.orient !== 'auto' || !!P.rotate],
 };
+const val = x => typeof x === 'function' ? x() : x;
+const DEFAULT_TOOLS = ['night','custom','shuffle','loop','mute','sleep','ab','effect','eq','speed','shot','bg','rotate'];
 function renderTools() {
   const row = $('#toolRow');
   row.innerHTML = S.settings.tools.filter(k => TOOLS[k]).map(k => { const [icn, label, , on] = TOOLS[k];
-    const inner = k === 'speed' ? `${+video.playbackRate.toFixed(2)}X` : k === 'loop' && P.loop === 'one' ? ic('loop1') : ic(icn);
-    return `<button class="tool ${on && on() ? 'on' : ''}" data-t="${k}"><span class="tc">${inner}</span>${label}</button>`; }).join('');
-  $$('.tool', row).forEach(b => b.onclick = e => { e.stopPropagation(); TOOLS[b.dataset.t][2](); renderTools(); poke(); });
+    const inner = k === 'speed' ? `${+video.playbackRate.toFixed(2)}X` : ic(val(icn));
+    return `<button class="tool ${on && on() ? 'on' : ''}" data-t="${k}"><span class="tc">${inner}</span><span class="lbl">${val(label)}</span></button>`; }).join('');
+  $$('.tool', row).forEach(b => b.onclick = e => { e.stopPropagation(); if (row._dragged) return; TOOLS[b.dataset.t][2](); renderTools(); poke(); });
+  applyToolHide();
 }
+/* sleep-timer countdown on the button */
+setInterval(() => {
+  if (P.sleepAt) {
+    if (Date.now() >= P.sleepAt) { P.sleepAt = 0; video.pause(); toast('Sleep timer: playback stopped'); renderTools(); return; }
+    const l = $('.tool[data-t="sleep"] .lbl'); if (l) l.textContent = fmtT((P.sleepAt - Date.now()) / 1000);
+  }
+}, 1000);
+
+/* ---- hide tool row to the left / right, tab to unhide ---- */
+function applyToolHide() {
+  const h = S.settings.toolHide || '', w = $('#toolWrap'), tab = $('#toolTab');
+  w.classList.toggle('off-left', h === 'left'); w.classList.toggle('off-right', h === 'right');
+  tab.classList.toggle('hidden', !h); tab.classList.toggle('left', h === 'left'); tab.classList.toggle('right', h === 'right');
+  tab.innerHTML = ic(h === 'left' ? 'chev' : 'chevl');
+}
+function hideTools(side) { S.settings.toolHide = side; save('settings'); applyToolHide(); poke(); }
+$('#hideL').onclick = e => { e.stopPropagation(); hideTools('left'); };
+$('#hideR').onclick = e => { e.stopPropagation(); hideTools('right'); };
+$('#toolTab').onclick = e => { e.stopPropagation(); hideTools(''); };
+(() => { // swipe the row past its end to hide it; mouse-drag & wheel to scroll on desktop
+  const row = $('#toolRow'); let sx = 0, sl = 0, down = false;
+  row.addEventListener('pointerdown', e => { down = true; sx = e.clientX; sl = row.scrollLeft; row._dragged = false; });
+  row.addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx; if (Math.abs(dx) > 8) row._dragged = true; if (e.pointerType === 'mouse' && row._dragged) row.scrollLeft = sl - dx; });
+  const end = e => { if (!down) return; down = false; const dx = e.clientX - sx; const max = row.scrollWidth - row.clientWidth;
+    if (dx < -90 && row.scrollLeft >= max - 2) hideTools('left'); else if (dx > 90 && row.scrollLeft <= 2) hideTools('right');
+    setTimeout(() => row._dragged = false, 50); };
+  row.addEventListener('pointerup', end); row.addEventListener('pointercancel', end); row.addEventListener('pointerleave', end);
+  row.addEventListener('wheel', e => { e.stopPropagation(); e.preventDefault(); row.scrollLeft += e.deltaY || e.deltaX; }, { passive: false });
+})();
+
 function customiseTools() {
-  const all = Object.keys(TOOLS).filter(k => k !== 'custom');
-  sheet(`<div class="sheet-h">Customise items<span style="font-size:13px;color:var(--sub)">tap to show/hide</span></div><div class="grid">` +
-    all.map(k => `<div class="gi ${S.settings.tools.includes(k) ? 'on' : ''}" data-k="${k}"><span class="circ">${k === 'speed' ? '1X' : ic(TOOLS[k][0])}</span>${TOOLS[k][1]}</div>`).join('') + `</div>`,
-    b => $$('.gi', b).forEach(g => g.onclick = () => { const k = g.dataset.k, t = S.settings.tools;
-      if (t.includes(k)) t.splice(t.indexOf(k), 1); else t.push(k); if (!t.includes('custom')) t.unshift('custom');
-      g.classList.toggle('on'); save('settings'); renderTools(); }), true);
+  const all = [...S.settings.tools, ...DEFAULT_TOOLS.filter(k => !S.settings.tools.includes(k))].filter(k => TOOLS[k]);
+  const lbl = k => ({ loop: 'Loop', mute: 'Mute', sleep: 'Sleep Timer', rotate: 'Screen Rotation' })[k] || val(TOOLS[k][1]);
+  const iconOf = k => k === 'speed' ? '<b style="font-size:13px">1X</b>' : ic(val(TOOLS[k][0]));
+  sheet(`<div class="sheet-h">Customise items<button class="chip" id="ctReset">Reset</button></div>
+    <div style="padding:0 20px 8px;color:var(--sub);font-size:13px">Switch items on/off and use the arrows to change their order in the top bar.</div>
+    <div id="ctList">${all.map(k => `<div class="opt ct" data-k="${k}"><span class="circ-s">${iconOf(k)}</span>${lbl(k)}
+      <span class="r ct-btns">${k === 'custom' ? '' : `<button class="icon-btn" data-up>${ic('up')}</button><button class="icon-btn" data-down>${ic('down')}</button>`}
+      <span class="switch ${S.settings.tools.includes(k) ? 'on' : ''}" ${k === 'custom' ? 'data-fixed' : 'data-sw'}></span></span></div>`).join('')}</div>`,
+    b => {
+      const commit = () => { S.settings.tools = $$('.ct', b).filter(r => $('.switch', r).classList.contains('on')).map(r => r.dataset.k); save('settings'); renderTools(); };
+      $$('.ct', b).forEach(r => {
+        const sw = $('[data-sw]', r); if (sw) sw.onclick = () => { sw.classList.toggle('on'); commit(); };
+        const up = $('[data-up]', r), dn = $('[data-down]', r);
+        if (up) up.onclick = () => { const p = r.previousElementSibling; if (p) { p.before(r); commit(); } };
+        if (dn) dn.onclick = () => { const n = r.nextElementSibling; if (n) { n.after(r); commit(); } };
+      });
+      $('#ctReset', b).onclick = () => { S.settings.tools = [...DEFAULT_TOOLS]; S.settings.toolHide = ''; save('settings'); renderTools(); closeSheet(); customiseTools(); };
+    }, true);
 }
 
 function openPlayer(m, list) {
   if (!m) return;
   P.queue = list && list.length ? list : [m]; P.idx = Math.max(0, P.queue.indexOf(m));
+  P.bg = false; $('#mini').classList.add('hidden');
   player.classList.remove('hidden'); P.open = true; player.focus();
   if (isAndroid && Cap.Plugins.StatusBar) Cap.Plugins.StatusBar.hide().catch(() => {});
   load(m);
 }
 function load(m, autoplay = true) {
   saveProgress();
-  P.media = m; P.ab = [null, null]; P.subCues = []; P.subOffset = 0; clearTracks();
+  P.media = m; P.ab = [null, null]; $('#abBar').classList.add('hidden'); P.subCues = []; P.subOffset = 0; clearTracks();
   player.classList.toggle('audio', m.kind === 'audio'); $('#audioTitle').textContent = stem(m.name);
   $('#pTitle').textContent = m.kind === 'audio' ? stem(m.name) : m.name;
   video.src = Plat.url(m); video.playbackRate = S.settings.speed || 1;
   video.onloadedmetadata = () => {
-    $('#tDur').textContent = fmtT(video.duration);
+    $('#tDur').textContent = fmtHMS(video.duration);
     const p = S.pos[m.path];
     if (S.settings.resume && p > 5 && p < video.duration - 5) { video.currentTime = p; toast('Resumed from ' + fmtT(p)); }
     const i = meta.get(m.path) || {}; meta.set(m.path, Object.assign(i, { dur: video.duration, w: video.videoWidth, h: video.videoHeight }));
@@ -542,7 +608,7 @@ function closePlayer() {
   if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
   if (P.orient !== 'auto') { P.orient = 'auto'; Plat.orientation('auto'); }
   if (isAndroid && Cap.Plugins.StatusBar) Cap.Plugins.StatusBar.show().catch(() => {});
-  player.classList.add('hidden'); P.open = false; P.locked = false; setLocked(false); closeSheet(); render();
+  player.classList.add('hidden'); P.open = false; P.bg = false; $('#mini').classList.add('hidden'); $('#abBar').classList.add('hidden'); $('#shotPrev').classList.add('hidden'); $('#plPanel').classList.add('hidden'); P.locked = false; setLocked(false); closeSheet(); render();
 }
 function saveProgress() { if (P.media && video.currentTime > 0) { const d = video.duration; S.pos[P.media.path] = d && video.currentTime > d - 3 ? 0 : video.currentTime; save('pos'); } }
 function next(dir = 1, auto = false) {
@@ -554,26 +620,26 @@ function next(dir = 1, auto = false) {
   P.idx = i; S.pos[P.media.path] = 0; load(P.queue[i]);
 }
 function togglePlay() { if (video.paused) video.play().catch(() => {}); else video.pause(); }
-video.onplay = video.onpause = () => { setIcon($('#pPlay'), video.paused ? 'play' : 'pause'); if (!video.paused) poke(); };
+video.onplay = video.onpause = () => { setIcon($('#pPlay'), video.paused ? 'playo' : 'pauseo'); if (!video.paused) poke(); };
 video.onended = () => { if (P.sleepEnd) { P.sleepEnd = false; toast('Sleep timer: stopped'); renderTools(); return; } next(1, true); };
 let lastSave = 0;
 video.ontimeupdate = () => {
   const d = video.duration || 0, t = video.currentTime;
   if (!seeking) { $('#seek').value = d ? t / d * 1000 : 0; $('#seekFill').style.width = (d ? t / d * 100 : 0) + '%'; }
-  $('#tCur').textContent = fmtT(t);
+  $('#tCur').textContent = fmtHMS(t); $('#seekKnob').style.left = (d ? t / d * 100 : 0) + '%';
   if (P.ab[0] != null && P.ab[1] != null && t >= P.ab[1]) video.currentTime = P.ab[0];
   if (P.sleepAt && Date.now() >= P.sleepAt) { P.sleepAt = 0; video.pause(); toast('Sleep timer: paused'); renderTools(); }
   if (Date.now() - lastSave > 5000) { lastSave = Date.now(); saveProgress(); }
 };
 video.onprogress = () => { try { const b = video.buffered; if (b.length) $('#seekBuf').style.width = b.end(b.length - 1) / video.duration * 100 + '%'; } catch {} };
 let seeking = false;
-$('#seek').oninput = e => { seeking = true; const d = video.duration || 0; const t = e.target.value / 1000 * d; $('#tCur').textContent = fmtT(t); $('#seekFill').style.width = e.target.value / 10 + '%'; poke(); };
+$('#seek').oninput = e => { seeking = true; const d = video.duration || 0; const t = e.target.value / 1000 * d; $('#tCur').textContent = fmtHMS(t); $('#seekFill').style.width = $('#seekKnob').style.left = e.target.value / 10 + '%'; poke(); };
 $('#seek').onchange = e => { seeking = false; video.currentTime = e.target.value / 1000 * (video.duration || 0); };
 
 /* controls visibility */
 let hideT;
 function poke() { player.classList.remove('hide-ctl'); clearTimeout(hideT); hideT = setTimeout(() => { if (!video.paused && !P.keepControls && !P.locked) player.classList.add('hide-ctl'); }, 3500); }
-function setLocked(v) { P.locked = v; $('#pUnlock').classList.toggle('hidden', !v); player.classList.toggle('hide-ctl', v); if (!v) poke(); }
+function setLocked(v) { P.locked = v; if (v) $('#plPanel').classList.add('hidden'); $('#pUnlock').classList.toggle('hidden', !v); player.classList.toggle('hide-ctl', v); if (!v) poke(); }
 $('#pLock').onclick = () => { setLocked(true); toast('Screen locked'); };
 $('#pUnlock').onclick = e => { e.stopPropagation(); setLocked(false); toast('Unlocked'); };
 $('#pBack').onclick = closePlayer;
@@ -628,6 +694,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'm') TOOLS.mute[2]();
   else if (k === 'n') next(1); else if (k === 'p') next(-1);
   else if (k === 's') screenshot();
+  else if (k === 'l') togglePlaylist();
   else if (k === 'Escape') { if (!$('#sheet').classList.contains('hidden')) closeSheet(); else if (!document.fullscreenElement) closePlayer(); }
   else return; poke(); renderTools();
 });
@@ -646,19 +713,39 @@ function applyAspect() {
   video.style.transform = P.rotate ? `rotate(${P.rotate}deg)` + (P.rotate % 180 ? ` scale(${Math.min(stage.clientHeight / stage.clientWidth, stage.clientWidth / stage.clientHeight)})` : '') : '';
 }
 addEventListener('resize', () => P.open && applyAspect());
-function cycleLoop() { P.loop = P.loop === 'off' ? 'all' : P.loop === 'all' ? 'one' : 'off'; video.loop = false; toast({ off: 'Loop off', all: 'Loop all', one: 'Loop current video' }[P.loop]); }
+function toggleNight() { S.settings.night = !S.settings.night; save('settings'); applyNight(); toast('Night mode ' + (S.settings.night ? 'on — screen dimmed for eye comfort' : 'off')); }
+function cycleLoop() { P.loop = P.loop === 'off' ? 'all' : P.loop === 'all' ? 'one' : 'off'; video.loop = false; toast({ off: 'Loop off', all: 'Loop all videos in list', one: 'Loop current video' }[P.loop]); }
 function sleepMenu() {
-  const opts = [[0, 'Off'], [15, '15 minutes'], [30, '30 minutes'], [45, '45 minutes'], [60, '60 minutes'], [90, '90 minutes'], [-1, 'End of current video']];
-  const left = P.sleepAt ? Math.ceil((P.sleepAt - Date.now()) / 60000) + ' min left' : P.sleepEnd ? 'at end of video' : 'off';
-  sheet(`<div class="sheet-h">Sleep timer<span style="font-size:13px;color:var(--sub)">${left}</span></div>` + opts.map(([v, l]) => `<div class="opt" data-v="${v}">${l}</div>`).join(''),
-    b => $$('[data-v]', b).forEach(x => x.onclick = () => { const v = +x.dataset.v; P.sleepAt = v > 0 ? Date.now() + v * 60000 : 0; P.sleepEnd = v === -1; closeSheet(); renderTools(); toast(v ? 'Sleep timer set' : 'Sleep timer off'); }), true);
+  const opts = [[0, 'Off'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '60 min'], [90, '90 min'], [120, '120 min']];
+  const cur = P.sleepAt ? Math.round((P.sleepAt - Date.now()) / 60000) : 30;
+  sheet(`<div class="sheet-h">Sleep timer<span style="font-size:13px;color:var(--sub)">${P.sleepAt ? fmtT((P.sleepAt - Date.now()) / 1000) + ' left' : P.sleepEnd ? 'stops at end of video' : 'off'}</span></div>
+    <div class="chips">${opts.map(([v, l]) => `<span class="chip ${(!v && !P.sleepAt && !P.sleepEnd) ? 'sel' : ''}" data-v="${v}">${l}</span>`).join('')}</div>
+    <div class="sl"><label>Custom<b id="slv">${cur} min</b></label><input type="range" id="slr" min="1" max="180" value="${Math.max(1, cur)}"></div>
+    <div class="opt" id="slEnd">${ic('play')}Stop at end of current video<span class="switch r ${P.sleepEnd ? 'on' : ''}"></span></div>
+    <div class="sheet-actions"><button class="btn" id="slSet">Start timer</button></div>`,
+    b => {
+      const set = (min) => { P.sleepAt = min > 0 ? Date.now() + min * 60000 : 0; if (min > 0) P.sleepEnd = false; renderTools(); };
+      $$('[data-v]', b).forEach(x => x.onclick = () => { const v = +x.dataset.v; if (!v) { P.sleepAt = 0; P.sleepEnd = false; } else set(v); closeSheet(); renderTools(); toast(v ? `Playback will stop in ${v} min` : 'Sleep timer off'); });
+      $('#slr', b).oninput = e => $('#slv', b).textContent = e.target.value + ' min';
+      $('#slSet', b).onclick = () => { const v = +$('#slr', b).value; set(v); closeSheet(); toast(`Playback will stop in ${v} min`); };
+      $('#slEnd', b).onclick = () => { P.sleepEnd = !P.sleepEnd; if (P.sleepEnd) P.sleepAt = 0; closeSheet(); renderTools(); toast(P.sleepEnd ? 'Will stop at end of this video' : 'Sleep timer off'); };
+    }, true);
 }
-function abRepeat() {
-  if (P.ab[0] == null) { P.ab[0] = video.currentTime; toast('Point A set at ' + fmtT(P.ab[0]) + ' — tap again for B'); }
-  else if (P.ab[1] == null) { if (video.currentTime <= P.ab[0] + .5) return toast('B must be after A'); P.ab[1] = video.currentTime; video.currentTime = P.ab[0]; toast(`Repeating ${fmtT(P.ab[0])} – ${fmtT(P.ab[1])}`); }
-  else { P.ab = [null, null]; toast('A-B repeat off'); }
+/* A-B repeat: bar with A / B buttons above the seek bar */
+function toggleABBar() { const bar = $('#abBar'); bar.classList.toggle('hidden'); updateABBar(); }
+function updateABBar() {
+  $('#abSetA').innerHTML = `<b>A</b> ${P.ab[0] != null ? fmtT(P.ab[0]) : '--:--'}`;
+  $('#abSetB').innerHTML = `<b>B</b> ${P.ab[1] != null ? fmtT(P.ab[1]) : '--:--'}`;
+  $('#abSetA').classList.toggle('set', P.ab[0] != null); $('#abSetB').classList.toggle('set', P.ab[1] != null);
+  $('#abState').textContent = P.ab[0] != null && P.ab[1] != null ? 'Repeating' : P.ab[0] != null ? 'Set point B' : 'Set point A';
   drawMarks();
 }
+$('#abSetA').onclick = e => { e.stopPropagation(); P.ab[0] = video.currentTime; if (P.ab[1] != null && P.ab[1] <= P.ab[0]) P.ab[1] = null; updateABBar(); renderTools(); poke(); };
+$('#abSetB').onclick = e => { e.stopPropagation(); if (P.ab[0] == null) P.ab[0] = 0; if (video.currentTime <= P.ab[0] + .5) return toast('Point B must be after point A');
+  P.ab[1] = video.currentTime; video.currentTime = P.ab[0]; video.play(); updateABBar(); renderTools(); toast(`Repeating ${fmtT(P.ab[0])} – ${fmtT(P.ab[1])}`); };
+$('#abClear').onclick = e => { e.stopPropagation(); P.ab = [null, null]; updateABBar(); renderTools(); toast('A-B repeat cleared'); };
+$('#abClose').onclick = e => { e.stopPropagation(); P.ab = [null, null]; $('#abBar').classList.add('hidden'); drawMarks(); renderTools(); };
+function abRepeat() { toggleABBar(); }
 function drawMarks() {
   const d = video.duration || 0;
   ['abA', 'abB'].forEach((id, i) => { const el = $('#' + id); el.classList.toggle('hidden', P.ab[i] == null || !d); if (d && P.ab[i] != null) el.style.left = P.ab[i] / d * 100 + '%'; });
@@ -667,12 +754,20 @@ function drawMarks() {
 }
 function speedMenu() {
   const sp = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
-  sheet(`<div class="sheet-h">Playback speed</div><div class="chips">` + sp.map(s => `<span class="chip ${video.playbackRate === s ? 'sel' : ''}" data-s="${s}">${s}X</span>`).join('') + `</div>
-    <div class="sl"><label>Custom <b id="spv">${video.playbackRate.toFixed(2)}X</b></label><input type="range" id="spr" min="0.25" max="4" step="0.05" value="${video.playbackRate}"></div>`,
-    b => { $$('[data-s]', b).forEach(c => c.onclick = () => { setSpeed(+c.dataset.s); closeSheet(); });
-      $('#spr', b).oninput = e => { setSpeed(+e.target.value); $('#spv', b).textContent = (+e.target.value).toFixed(2) + 'X'; }; }, true);
+  sheet(`<div class="sheet-h">Speed<button class="chip" id="spReset">Reset 1.0X</button></div>
+    <div class="speedctl"><button class="icon-btn" id="spDn">${ic('minus')}</button><b id="spv">${video.playbackRate.toFixed(2)}X</b><button class="icon-btn" id="spUp">${ic('plus')}</button></div>
+    <div class="sl"><input type="range" id="spr" min="0.25" max="4" step="0.05" value="${video.playbackRate}"></div>
+    <div class="chips">` + sp.map(s => `<span class="chip ${video.playbackRate === s ? 'sel' : ''}" data-s="${s}">${s}X</span>`).join('') + `</div>`,
+    b => {
+      const upd = s => { s = Math.round(Math.max(.25, Math.min(4, s)) * 100) / 100; setSpeed(s); $('#spv', b).textContent = s.toFixed(2) + 'X'; $('#spr', b).value = s; $$('[data-s]', b).forEach(c => c.classList.toggle('sel', +c.dataset.s === s)); };
+      $$('[data-s]', b).forEach(c => c.onclick = () => upd(+c.dataset.s));
+      $('#spr', b).oninput = e => upd(+e.target.value);
+      $('#spDn', b).onclick = () => upd(video.playbackRate - .05); $('#spUp', b).onclick = () => upd(video.playbackRate + .05);
+      $('#spReset', b).onclick = () => upd(1);
+    }, true);
 }
 function setSpeed(s) { video.playbackRate = s; S.settings.speed = s; save('settings'); renderTools(); }
+/* Screenshot: flash + floating preview with share / open */
 async function screenshot() {
   if (P.media.kind !== 'video' || !video.videoWidth) return toast('No video frame to capture');
   try {
@@ -680,74 +775,170 @@ async function screenshot() {
     const g2 = c.getContext('2d'); g2.filter = video.style.filter || 'none'; g2.drawImage(video, 0, 0);
     const blob = await new Promise(r => c.toBlob(r, 'image/png'));
     const name = `MeyPlayer_${stem(P.media.name).slice(0, 40)}_${fmtT(video.currentTime).replace(/:/g, '-')}.png`;
-    const where = await Plat.saveData(name, blob); toast('Screenshot saved: ' + where);
+    const fl = $('#shotFlash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+    const saved = await Plat.saveData(name, blob);
+    const pv = $('#shotPrev'); $('#shotImg').src = URL.createObjectURL(blob); $('#shotWhere').textContent = 'Saved to ' + saved.where;
+    pv.classList.remove('hidden'); clearTimeout(pv._t); pv._t = setTimeout(() => pv.classList.add('hidden'), 5000);
+    $('#shotShare').textContent = isElectron ? 'Show in folder' : 'Share';
+    $('#shotShare').onclick = e => { e.stopPropagation(); pv.classList.add('hidden'); Plat.share({ name, path: saved.path, uri: saved.uri, file: saved.file }); };
   } catch (e) { toast('Screenshot failed: ' + e.message); }
 }
+$('#shotClose').onclick = e => { e.stopPropagation(); $('#shotPrev').classList.add('hidden'); };
+/* Background play: keep audio running, show mini player */
+function enterBackground() {
+  if (!P.media) return;
+  P.bg = true; P.open = false; if (video.paused) video.play().catch(() => {});
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  player.classList.add('hidden'); closeSheet();
+  if (isAndroid && Cap.Plugins.StatusBar) Cap.Plugins.StatusBar.show().catch(() => {});
+  updateMini(); render(); toast('Playing in background as audio');
+}
+function exitBackground() { if (!P.bg) return; P.bg = false; P.open = true; player.classList.remove('hidden'); $('#mini').classList.add('hidden'); player.focus(); poke(); renderTools(); }
+function updateMini() {
+  const m = $('#mini'); m.classList.toggle('hidden', !P.bg); if (!P.bg || !P.media) return;
+  $('#miniTitle').textContent = stem(P.media.name); setIcon($('#miniPlay'), video.paused ? 'play' : 'pause');
+}
+$('#mini').onclick = e => { if (!e.target.closest('button')) exitBackground(); };
+$('#miniPlay').onclick = e => { e.stopPropagation(); togglePlay(); };
+$('#miniNext').onclick = e => { e.stopPropagation(); next(1); };
+$('#miniClose').onclick = e => { e.stopPropagation(); P.bg = false; $('#mini').classList.add('hidden'); closePlayer(); };
+video.addEventListener('play', updateMini); video.addEventListener('pause', updateMini); video.addEventListener('loadedmetadata', updateMini);
 async function rotateScreen() {
   if (isAndroid) {
     P.orient = P.orient === 'auto' ? 'landscape' : P.orient === 'landscape' ? 'portrait' : 'auto';
-    await Plat.orientation(P.orient); toast('Orientation: ' + P.orient);
-  } else { P.rotate = (P.rotate + 90) % 360; applyAspect(); toast('Rotated ' + P.rotate + '°'); }
+    await Plat.orientation(P.orient); toast({ auto: 'Auto-rotate', landscape: 'Locked to landscape', portrait: 'Locked to portrait' }[P.orient]);
+  } else { P.rotate = (P.rotate + 90) % 360; applyAspect(); toast(P.rotate ? 'Video rotated ' + P.rotate + '°' : 'Rotation reset'); }
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && P.open && !video.paused && !S.settings.bgPlay && !document.pictureInPictureElement) { video.pause(); P.bgPaused = true; }
+  if (document.hidden && (P.open || P.bg) && !video.paused && !S.settings.bgPlay && !P.bg && !document.pictureInPictureElement) { video.pause(); P.bgPaused = true; }
   else if (!document.hidden && P.bgPaused) { P.bgPaused = false; }
 });
 
 /* --- Web Audio: equalizer & effects --- */
 const EQ_FREQ = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 const EQ_PRESETS = { Normal: [0,0,0,0,0,0,0,0,0,0], Pop: [-1,1,3,4,3,0,-1,-1,0,1], Rock: [5,4,2,-1,-2,-1,2,4,5,5], Jazz: [3,2,1,2,-1,-1,0,1,2,3],
-  Classical: [4,3,2,1,-1,-1,0,2,3,4], Dance: [6,5,2,0,0,-2,-2,0,4,5], 'Bass Boost': [7,6,5,3,1,0,0,0,0,0], Vocal: [-2,-2,-1,1,4,5,4,2,0,-1], 'Treble Boost': [0,0,0,0,0,1,3,5,7,8] };
+  Classical: [4,3,2,1,-1,-1,0,2,3,4], Dance: [6,5,2,0,0,-2,-2,0,4,5], 'Heavy Metal': [4,1,9,3,0,0,3,4,6,6], 'Hip Hop': [5,4,1,3,-1,-1,1,-1,2,3], Folk: [3,0,0,2,4,4,3,0,2,3], Flat: [0,0,0,0,0,0,0,0,0,0] };
+const REVERBS = { None: [0, 0], 'Small Room': [.6, .25], 'Medium Room': [1.1, .3], 'Large Room': [1.8, .35], 'Medium Hall': [2.4, .4], 'Large Hall': [3.4, .45], Plate: [1.4, .4] };
+const fxActive = () => S.settings.fxOn && (S.settings.bass || S.settings.virt || S.settings.reverbPreset !== 'None' || S.settings.boost !== 100);
 function audioGraph() {
   if (P.audio) return P.audio;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const src = ctx.createMediaElementSource(video);
     const bands = EQ_FREQ.map((f, i) => { const b = ctx.createBiquadFilter(); b.type = i === 0 ? 'lowshelf' : i === 9 ? 'highshelf' : 'peaking'; b.frequency.value = f; b.Q.value = 1.1; return b; });
-    const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 120;
-    const gain = ctx.createGain(); const dry = ctx.createGain(); const wet = ctx.createGain(); const conv = ctx.createConvolver();
-    const len = ctx.sampleRate * 2.2, ir = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
-    conv.buffer = ir;
+    const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 110;
+    const gain = ctx.createGain(), dry = ctx.createGain(), wet = ctx.createGain(), conv = ctx.createConvolver(), mix = ctx.createGain();
     let node = src; bands.forEach(b => { node.connect(b); node = b; }); node.connect(bass); bass.connect(gain);
-    gain.connect(dry); dry.connect(ctx.destination); gain.connect(conv); conv.connect(wet); wet.connect(ctx.destination);
-    P.audio = { ctx, bands, bass, gain, wet, dry };
+    gain.connect(dry); dry.connect(mix); gain.connect(conv); conv.connect(wet); wet.connect(mix);
+    // Virtualizer: mid/side stereo widening
+    const sp = ctx.createChannelSplitter(2), mg = ctx.createChannelMerger(2);
+    const g = v => { const n = ctx.createGain(); n.gain.value = v; return n; };
+    const lM = g(.5), rM = g(.5), lS = g(.5), rS = g(-.5), mid = g(1), side = g(1), inv = g(-1);
+    mix.connect(sp); sp.connect(lM, 0); sp.connect(rM, 1); sp.connect(lS, 0); sp.connect(rS, 1);
+    lM.connect(mid); rM.connect(mid); lS.connect(side); rS.connect(side);
+    mid.connect(mg, 0, 0); mid.connect(mg, 0, 1); side.connect(mg, 0, 0); side.connect(inv); inv.connect(mg, 0, 1);
+    mg.connect(ctx.destination);
+    P.audio = { ctx, bands, bass, gain, wet, dry, conv, side, irKey: '' };
     applyAudio(); return P.audio;
   } catch (e) { toast('Audio processing unavailable: ' + e.message); return null; }
 }
+function makeIR(ctx, secs) {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * secs)), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  return ir;
+}
 function applyAudio() {
-  const a = P.audio; if (!a) return; const st = S.settings;
-  a.bands.forEach((b, i) => b.gain.value = st.eq[i]); a.bass.gain.value = st.bass; a.gain.gain.value = st.boost / 100;
-  a.wet.gain.value = st.reverb / 100 * .8; a.dry.gain.value = 1 - st.reverb / 100 * .35;
+  const a = P.audio; if (!a) return; const st = S.settings, fx = st.fxOn;
+  a.bands.forEach((b, i) => b.gain.value = st.eqOn ? st.eq[i] : 0);
+  a.bass.gain.value = fx ? st.bass / 100 * 15 : 0;
+  a.gain.gain.value = fx ? st.boost / 100 : 1;
+  a.side.gain.value = fx ? 1 + st.virt / 100 * 1.8 : 1;
+  const [secs, w] = REVERBS[fx ? st.reverbPreset : 'None'] || [0, 0];
+  if (secs && a.irKey !== st.reverbPreset) { a.conv.buffer = makeIR(a.ctx, secs); a.irKey = st.reverbPreset; }
+  a.wet.gain.value = secs ? w : 0; a.dry.gain.value = secs ? 1 - w * .3 : 1;
   if (a.ctx.state === 'suspended') a.ctx.resume();
 }
+const switchHtml = (id, on) => `<span class="switch ${on ? 'on' : ''}" id="${id}"></span>`;
 function eqMenu() {
   if (!audioGraph()) return; const st = S.settings;
-  sheet(`<div class="sheet-h">Equalizer<button class="chip" id="eqReset">Reset</button></div><div class="chips">` +
+  sheet(`<div class="sheet-h">Equalizer<span style="display:flex;gap:10px;align-items:center"><button class="chip" id="eqReset">Reset</button>${switchHtml('eqSw', st.eqOn)}</span></div><div class="chips">` +
     Object.keys(EQ_PRESETS).map(p => `<span class="chip ${st.eqPreset === p ? 'sel' : ''}" data-p="${p}">${p}</span>`).join('') + `</div>
-    <div class="eq">${EQ_FREQ.map((f, i) => `<div class="band"><span id="eqv${i}">${st.eq[i] > 0 ? '+' : ''}${st.eq[i]}</span><input type="range" min="-12" max="12" step="1" value="${st.eq[i]}" data-i="${i}"><span>${f >= 1000 ? f / 1000 + 'k' : f}</span></div>`).join('')}</div>`,
+    <div class="eq ${st.eqOn ? '' : 'off'}">${EQ_FREQ.map((f, i) => `<div class="band"><span id="eqv${i}">${st.eq[i] > 0 ? '+' : ''}${st.eq[i]}</span><input type="range" min="-12" max="12" step="1" value="${st.eq[i]}" data-i="${i}"><span>${f >= 1000 ? f / 1000 + 'k' : f}</span></div>`).join('')}</div>`,
     b => {
+      const on = () => { if (!st.eqOn) { st.eqOn = true; $('#eqSw', b).classList.add('on'); $('.eq', b).classList.remove('off'); } };
       const sync = () => $$('.eq input', b).forEach((r, i) => { r.value = st.eq[i]; $('#eqv' + i, b).textContent = (st.eq[i] > 0 ? '+' : '') + st.eq[i]; });
-      $$('[data-p]', b).forEach(c => c.onclick = () => { st.eq = [...EQ_PRESETS[c.dataset.p]]; st.eqPreset = c.dataset.p; $$('[data-p]', b).forEach(x => x.classList.toggle('sel', x === c)); sync(); applyAudio(); save('settings'); renderTools(); });
-      $$('.eq input', b).forEach(r => r.oninput = () => { st.eq[+r.dataset.i] = +r.value; st.eqPreset = 'Custom'; $$('[data-p]', b).forEach(x => x.classList.remove('sel')); sync(); applyAudio(); save('settings'); renderTools(); });
+      $('#eqSw', b).onclick = e => { st.eqOn = !st.eqOn; e.target.classList.toggle('on', st.eqOn); $('.eq', b).classList.toggle('off', !st.eqOn); applyAudio(); save('settings'); renderTools(); };
+      $$('[data-p]', b).forEach(c => c.onclick = () => { on(); st.eq = [...EQ_PRESETS[c.dataset.p]]; st.eqPreset = c.dataset.p; $$('[data-p]', b).forEach(x => x.classList.toggle('sel', x === c)); sync(); applyAudio(); save('settings'); renderTools(); });
+      $$('.eq input', b).forEach(r => r.oninput = () => { on(); st.eq[+r.dataset.i] = +r.value; st.eqPreset = 'Custom'; $$('[data-p]', b).forEach(x => x.classList.remove('sel')); sync(); applyAudio(); save('settings'); renderTools(); });
       $('#eqReset', b).onclick = () => $('[data-p="Normal"]', b).click();
     }, true);
 }
 function effectMenu() {
   if (!audioGraph()) return; const st = S.settings;
-  const sl = (id, label, min, max, val, unit) => `<div class="sl"><label>${label}<b id="${id}v">${val}${unit}</b></label><input type="range" id="${id}" min="${min}" max="${max}" value="${val}"></div>`;
-  sheet(`<div class="sheet-h">Audio effect<button class="chip" id="fxReset">Reset</button></div>` + sl('fxBass', 'Bass boost', 0, 15, st.bass, ' dB') + sl('fxBoost', 'Volume boost', 50, 250, st.boost, '%') + sl('fxRev', 'Reverb / room', 0, 100, st.reverb, '%'),
+  const sl = (id, label, min, max, v, unit) => `<div class="sl"><label>${label}<b id="${id}v">${v}${unit}</b></label><input type="range" id="${id}" min="${min}" max="${max}" value="${v}"></div>`;
+  sheet(`<div class="sheet-h">Audio effect<span style="display:flex;gap:10px;align-items:center"><button class="chip" id="fxReset">Reset</button>${switchHtml('fxSw', st.fxOn)}</span></div>
+    <div id="fxBody" class="${st.fxOn ? '' : 'off'}">
+    ${sl('fxBass', 'Bass Boost', 0, 100, st.bass, '%')}${sl('fxVirt', 'Virtualizer (3D surround)', 0, 100, st.virt, '%')}${sl('fxBoost', 'Volume Boost', 50, 250, st.boost, '%')}
+    <div class="sl"><label>Reverb</label></div><div class="chips">${Object.keys(REVERBS).map(r => `<span class="chip ${st.reverbPreset === r ? 'sel' : ''}" data-r="${r}">${r}</span>`).join('')}</div></div>`,
     b => {
-      const bind = (id, key, unit) => $('#' + id, b).oninput = e => { st[key] = +e.target.value; $('#' + id + 'v', b).textContent = e.target.value + unit; applyAudio(); save('settings'); renderTools(); };
-      bind('fxBass', 'bass', ' dB'); bind('fxBoost', 'boost', '%'); bind('fxRev', 'reverb', '%');
-      $('#fxReset', b).onclick = () => { st.bass = 0; st.boost = 100; st.reverb = 0; applyAudio(); save('settings'); closeSheet(); effectMenu(); renderTools(); };
+      const on = () => { if (!st.fxOn) { st.fxOn = true; $('#fxSw', b).classList.add('on'); $('#fxBody', b).classList.remove('off'); } };
+      $('#fxSw', b).onclick = e => { st.fxOn = !st.fxOn; e.target.classList.toggle('on', st.fxOn); $('#fxBody', b).classList.toggle('off', !st.fxOn); applyAudio(); save('settings'); renderTools(); };
+      const bind = (id, key, unit) => $('#' + id, b).oninput = e => { on(); st[key] = +e.target.value; $('#' + id + 'v', b).textContent = e.target.value + unit; applyAudio(); save('settings'); renderTools(); };
+      bind('fxBass', 'bass', '%'); bind('fxVirt', 'virt', '%'); bind('fxBoost', 'boost', '%');
+      $$('[data-r]', b).forEach(c => c.onclick = () => { on(); st.reverbPreset = c.dataset.r; $$('[data-r]', b).forEach(x => x.classList.toggle('sel', x === c)); applyAudio(); save('settings'); renderTools(); });
+      $('#fxReset', b).onclick = () => { Object.assign(st, { bass: 0, virt: 0, boost: 100, reverbPreset: 'None' }); applyAudio(); save('settings'); closeSheet(); effectMenu(); renderTools(); };
     }, true);
 }
+
+
+/* ---------- bottom bar (desktop-player style) ---------- */
+$('#pShot').onclick = () => screenshot();
+$('#pOpen').onclick = () => { P.addToQueue = false; isElectron ? meyAPI.openFiles().then(ps => ps && ps.length && openPaths(ps)) : $('#inFiles').click(); };
+$('#pStop').onclick = () => { video.pause(); video.currentTime = 0; if (P.media) { S.pos[P.media.path] = 0; save('pos'); } toast('Stopped'); poke(); };
+$('#pSub').onclick = () => subtitleMenu();
+$('#pEq').onclick = () => eqMenu();
+$('#pVol').onclick = () => { video.muted = !video.muted; renderTools(); };
+$('#volSlider').oninput = e => { video.volume = e.target.value / 100; video.muted = false; poke(); };
+function syncVol() { const v = video.muted ? 0 : Math.round(video.volume * 100); $('#volSlider').value = v; $('#volFill').style.width = v + '%';
+  setIcon($('#pVol'), video.muted || v === 0 ? 'mute' : 'vol'); $('#pVol').classList.toggle('on', video.muted); }
+video.addEventListener('volumechange', syncVol); syncVol();
+
+/* ---------- playlist side panel ---------- */
+function togglePlaylist(force) {
+  const pan = $('#plPanel'); const show = force ?? pan.classList.contains('hidden');
+  pan.classList.toggle('hidden', !show); $('#pList').classList.toggle('on', show);
+  if (show) { pan.style.bottom = $('#pBottom').offsetHeight + 'px'; renderPlaylistPanel(); } P.keepControls = show; poke();
+}
+function renderPlaylistPanel() {
+  const pan = $('#plPanel'); if (pan.classList.contains('hidden')) return;
+  $('#plCount').textContent = `${P.idx + 1} / ${P.queue.length}`;
+  $('#plList').innerHTML = P.queue.map((m, i) => { const d = (meta.get(m.path) || {}).dur;
+    return `<div class="pli ${i === P.idx ? 'cur' : ''}" data-i="${i}"><span class="n">${i === P.idx ? ic('playo') : i + 1}</span>
+      <span class="t">${esc(m.name)}</span><span class="d">${d ? fmtT(d) : ''}</span>
+      ${i === P.idx ? '' : `<button class="bb x" data-x="${i}" title="Remove">${ic('close')}</button>`}</div>`; }).join('');
+  $$('.pli', pan).forEach(r => r.onclick = e => {
+    const x = e.target.closest('[data-x]');
+    if (x) { const i = +x.dataset.x; P.queue.splice(i, 1); if (i < P.idx) P.idx--; renderPlaylistPanel(); return; }
+    P.idx = +r.dataset.i; load(P.queue[P.idx]); });
+  const cur = $('.pli.cur', pan); if (cur) cur.scrollIntoView({ block: 'nearest' });
+}
+$('#pList').onclick = () => togglePlaylist();
+$('#plClose').onclick = () => togglePlaylist(false);
+$('#plAdd').onclick = () => { if (isElectron) meyAPI.openFiles().then(ps => addToQueue(ps)); else { P.addToQueue = true; $('#inFiles').click(); } };
+$('#plSave').onclick = () => { const n = prompt('Save playlist as', 'My playlist ' + (Object.keys(S.playlists).length + 1)); if (!n) return;
+  S.playlists[n] = P.queue.map(m => m.path); save('playlists'); toast('Playlist saved: ' + n); };
+function addToQueue(paths) {
+  for (const p of paths || []) { const k = kindOf(p); if (!k || k === 'sub') continue;
+    let m = byPath(p); if (!m) { m = { path: p, name: baseName(p), folder: dirOf(p), kind: k, size: 0, mtime: 0 }; LIB.push(m); }
+    if (!P.queue.includes(m)) P.queue.push(m); }
+  renderPlaylistPanel(); toast('Added to playlist');
+}
+video.addEventListener('loadedmetadata', renderPlaylistPanel);
 
 /* --- More menu --- */
 function moreMenu() {
   const m = P.media; const fav = S.fav.has(m.path);
-  const items = [['note', 'Audio Track', audioTrackMenu], ['sub', 'Subtitle', subtitleMenu], ['queue', 'Playing Queue', queueMenu], ['aspect', 'Aspect Ratio', aspectMenu],
+  const items = [['note', 'Audio Track', audioTrackMenu], ['sub', 'Subtitle', subtitleMenu], ['queue', 'Playing Queue', () => { closeSheet(); togglePlaylist(true); }], ['aspect', 'Aspect Ratio', aspectMenu],
     ['display', 'Display Settings', displayMenu], ['bookmark', 'Bookmark', bookmarkMenu], ['cut', 'Cut', cutMenu], [fav ? 'heartf' : 'heart', 'Favourite', () => { toggleFav(m); closeSheet(); }],
     ['addlist', 'Add To Playlist', () => playlistMenu(m, true)], ['info', 'Information', () => infoSheet(m, true)], ['share', isElectron ? 'Show in Folder' : 'Share', () => { closeSheet(); Plat.share(m); }],
     ['bulb', 'Tutorial', () => { closeSheet(); tutorial(); }], ['full', 'Fullscreen', () => { closeSheet(); toggleFullscreen(); }]];
@@ -852,8 +1043,8 @@ async function exportClip(a, z) {
     await new Promise(r => { const chk = () => { if (video.currentTime >= z || video.ended || video.paused) { video.removeEventListener('timeupdate', chk); r(); } }; video.addEventListener('timeupdate', chk); });
     video.pause(); rec.stop(); await stopped;
     const blob = new Blob(chunks, { type: 'video/webm' });
-    const where = await Plat.saveData(`${stem(P.media.name).slice(0, 40)}_cut_${fmtT(a).replace(/:/g, '-')}.webm`, blob);
-    toast('Clip saved: ' + where);
+    const saved = await Plat.saveData(`${stem(P.media.name).slice(0, 40)}_cut_${fmtT(a).replace(/:/g, '-')}.webm`, blob);
+    toast('Clip saved to ' + saved.where);
   } catch (e) { toast('Cut failed: ' + e.message); }
 }
 function tutorial() {
@@ -873,8 +1064,9 @@ $('#searchInput').oninput = e => { query = e.target.value.trim(); render(); };
 $('#btnSort').onclick = sortMenu;
 $('#btnOpenFile').onclick = () => isElectron ? meyAPI.openFiles().then(ps => ps && ps.length && openPaths(ps)) : $('#inFiles').click();
 $('#inFiles').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
-  if (isElectron) return openPaths(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean));
+  if (isElectron) return P.addToQueue ? (P.addToQueue = false, addToQueue(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean))) : openPaths(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean));
   const before = browserFiles.length; addBrowserFiles(fs); const added = browserFiles.slice(before);
+  if (P.addToQueue && P.media) { P.addToQueue = false; if (!isAndroid) LIB = [...browserFiles]; else added.forEach(a => !byPath(a.path) && LIB.push(a)); added.forEach(a => P.queue.push(a)); renderPlaylistPanel(); toast('Added to playlist'); return; }
   if (!isElectron && !isAndroid) { LIB = [...browserFiles]; }
   else added.forEach(a => { if (!byPath(a.path)) LIB.push(a); });
   render(); const list = added.length ? added : [];
@@ -888,7 +1080,7 @@ function openPaths(paths) {
 /* drag & drop (desktop) */
 addEventListener('dragover', e => e.preventDefault());
 addEventListener('drop', e => { e.preventDefault(); const fs = [...e.dataTransfer.files]; if (!fs.length) return;
-  if (isElectron) return openPaths(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean));
+  if (isElectron) return P.addToQueue ? (P.addToQueue = false, addToQueue(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean))) : openPaths(fs.map(f => meyAPI.pathForFile(f)).filter(Boolean));
   const before = browserFiles.length; addBrowserFiles(fs); LIB = [...browserFiles]; render(); const add = browserFiles.slice(before); if (add[0]) openPlayer(add[0], add); });
 /* Android hardware back button */
 if (isAndroid && Cap.Plugins.App) Cap.Plugins.App.addListener('backButton', () => {

@@ -79,7 +79,7 @@ app.whenReady().then(() => {
   });
   createWindow();
 });
-app.setAboutPanelOptions({ applicationName: 'MeyPlayer', applicationVersion: '1.0.0', copyright: 'Copyright © 2026 Kamil', authors: ['Kamil'] });
+app.setAboutPanelOptions({ applicationName: 'MeyPlayer', applicationVersion: '1.2.0', copyright: 'Copyright © 2026 Kamil', authors: ['Kamil'] });
 app.on('window-all-closed', () => app.quit());
 
 /* ---------- IPC ---------- */

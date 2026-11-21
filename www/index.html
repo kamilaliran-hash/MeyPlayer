@@ -22,6 +22,12 @@
 
   <main id="view"></main>
 
+  <div id="mini" class="hidden">
+    <img src="assets/logo.png" alt=""><div class="mt"><div id="miniTitle"></div><small>Background play · tap to open</small></div>
+    <button class="icon-btn" id="miniPlay" data-icon="pause"></button>
+    <button class="icon-btn" id="miniNext" data-icon="next"></button>
+    <button class="icon-btn" id="miniClose" data-icon="close"></button>
+  </div>
   <nav id="bottomnav">
     <button data-tab="local" class="active"><i data-icon="folder"></i><span>Local</span></button>
     <button data-tab="music"><i data-icon="music"></i><span>Music</span></button>
@@ -46,30 +52,63 @@
       <span id="pBadges"></span>
       <button class="icon-btn" id="pMore" data-icon="dots"></button>
     </div>
-    <div id="toolRow"></div>
+    <div id="toolWrap">
+      <button id="hideL" class="edge l" title="Hide buttons to the left" data-icon="chevl"></button>
+      <div id="toolRow"></div>
+      <button id="hideR" class="edge r" title="Hide buttons to the right" data-icon="chev"></button>
+    </div>
+    <button id="toolTab" class="hidden" title="Show buttons"></button>
   </div>
   <div id="pBottom" class="pctl">
-    <div class="seek-row">
-      <span id="tCur">00:00</span>
-      <div id="seekWrap">
-        <div id="seekBuf"></div><div id="seekFill"></div>
-        <div id="abA" class="abmark hidden"></div><div id="abB" class="abmark hidden"></div>
-        <div id="bmMarks"></div>
-        <input id="seek" type="range" min="0" max="1000" value="0" step="1">
-      </div>
-      <span id="tDur">00:00</span>
+    <div id="abBar" class="hidden">
+      <span id="abState">Set point A</span>
+      <button id="abSetA" class="abbtn"><b>A</b> --:--</button>
+      <button id="abSetB" class="abbtn"><b>B</b> --:--</button>
+      <button id="abClear" class="icon-btn" title="Clear" data-icon="refresh"></button>
+      <button id="abClose" class="icon-btn" title="Close A-B repeat" data-icon="close"></button>
     </div>
-    <div class="ctl-row">
-      <button class="icon-btn" id="pLock" data-icon="unlock" title="Lock"></button>
-      <div class="mid">
-        <button class="icon-btn big" id="pPrev" data-icon="prev" title="Previous"></button>
-        <button class="icon-btn huge" id="pPlay" data-icon="play" title="Play/Pause"></button>
-        <button class="icon-btn big" id="pNext" data-icon="next" title="Next"></button>
+    <div id="seekWrap">
+      <div id="seekBuf"></div><div id="seekFill"></div><div id="seekKnob"></div>
+      <div id="abA" class="abmark hidden"></div><div id="abB" class="abmark hidden"></div>
+      <div id="bmMarks"></div>
+      <input id="seek" type="range" min="0" max="1000" value="0" step="1">
+    </div>
+    <div class="bar">
+      <div class="time-row"><span id="tCur">00:00:00</span><span id="tDur">00:00:00</span></div>
+      <div class="bar-row">
+        <div class="bl">
+          <button class="bb" id="pList" data-icon="listbox" title="Playlist (L)"></button>
+          <button class="bb" id="pLock" data-icon="lockbar" title="Lock screen"></button>
+          <button class="bb" id="pAspect" data-icon="goggles" title="Aspect ratio"></button>
+          <button class="bb" id="pPip" data-icon="cube" title="Picture in picture / Fullscreen"></button>
+          <button class="bb" id="pShot" data-icon="capture" title="Screenshot (S)"></button>
+        </div>
+        <div class="bc">
+          <button class="bb" id="pOpen" data-icon="eject" title="Open file"></button>
+          <button class="bb" id="pPrev" data-icon="prevo" title="Previous (P)"></button>
+          <button class="bb play" id="pPlay" data-icon="playo" title="Play / Pause (Space)"></button>
+          <button class="bb" id="pNext" data-icon="nexto" title="Next (N)"></button>
+          <button class="bb" id="pStop" data-icon="stopo" title="Stop"></button>
+        </div>
+        <div class="br">
+          <button class="bb" id="pSub" data-icon="subbox" title="Subtitle"></button>
+          <button class="bb" id="pEq" data-icon="wave" title="Equalizer"></button>
+          <button class="bb" id="pVol" data-icon="vol" title="Mute (M)"></button>
+          <div id="volWrap"><div id="volFill"></div><input id="volSlider" type="range" min="0" max="100" value="100"></div>
+        </div>
       </div>
-      <button class="icon-btn" id="pAspect" data-icon="aspect" title="Aspect ratio"></button>
-      <button class="icon-btn" id="pPip" data-icon="pip" title="Picture in picture / Fullscreen"></button>
     </div>
   </div>
+  <aside id="plPanel" class="hidden">
+    <div class="plh"><b>Playlist</b><span id="plCount"></span>
+      <button class="bb" id="plAdd" data-icon="plus" title="Add files"></button>
+      <button class="bb" id="plSave" data-icon="addlist" title="Save as playlist"></button>
+      <button class="bb" id="plClose" data-icon="close" title="Close"></button></div>
+    <div id="plList"></div>
+  </aside>
+  <div id="shotFlash"></div>
+  <div id="shotPrev" class="hidden"><img id="shotImg" alt=""><div id="shotWhere"></div>
+    <div class="shot-act"><button id="shotShare">Share</button><button id="shotClose">Close</button></div></div>
   <button id="pUnlock" class="icon-btn hidden" data-icon="lock" title="Unlock"></button>
 </section>
 

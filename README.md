@@ -1,7 +1,7 @@
 # MeyPlayer
 
 **App owner:** Kamil  
-**Version:** 1.0.0
+**Version:** 1.2.0
 
 Offline video & music player for **Windows (.exe installer + portable)** and **Android (.apk)**, built from one shared UI (`www/`).
 
@@ -9,9 +9,9 @@ Offline video & music player for **Windows (.exe installer + portable)** and **A
 1. Create a free GitHub repository and upload everything in this folder (keep the `.github` folder).
 2. Open the **Actions** tab. The *Build MeyPlayer* workflow starts by itself (or click **Run workflow**).
 3. After ~10 minutes, open the finished run and download:
-   - **MeyPlayer-Windows** → `MeyPlayer-Setup-1.0.0.exe` (installer) and `MeyPlayer-Portable-1.0.0.exe`
-   - **MeyPlayer-Android** → `MeyPlayer-1.0.0.apk`
-4. To publish a GitHub Release with the files attached, push a tag such as `v1.0.0`.
+   - **MeyPlayer-Windows** → `MeyPlayer-Setup-1.2.0.exe` (installer) and `MeyPlayer-Portable-1.2.0.exe`
+   - **MeyPlayer-Android** → `MeyPlayer-1.2.0.apk`
+4. To publish a GitHub Release with the files attached, push a tag such as `v1.2.0`.
 
 Android: allow "Install unknown apps" for your browser/file manager, then open the APK. Allow media access on first launch.
 Windows: SmartScreen may warn because the exe is unsigned. Click **More info → Run anyway**.
@@ -31,7 +31,7 @@ Player tools (shown in the top row; use **Customise Items** to pick which ones a
 
 More menu: Audio Track, Subtitle (.srt/.vtt, auto-loads a matching file, size and sync delay settings), Playing Queue, Aspect Ratio (Fit/Fill/Stretch/16:9/4:3/100%), Display Settings (brightness/contrast/saturation), Bookmarks, Cut (exports a WebM clip), Favourite, Add To Playlist, Information, Share / Show in Folder, Tutorial, Fullscreen.
 
-Controls: lock screen, previous/next, picture-in-picture (Windows), swipe left/right to seek, swipe up/down for brightness (left side) or volume (right side), double-tap to skip ±10 s.
+Bottom bar (desktop-player style): playlist panel, lock, aspect ratio, picture-in-picture/fullscreen, screenshot · open, previous, play/pause, next, stop · subtitle, equalizer, mute and volume slider. Other controls, swipe left/right to seek, swipe up/down for brightness (left side) or volume (right side), double-tap to skip ±10 s.
 Keyboard: Space, ←/→, ↑/↓, F, M, N/P, S.
 
 ## Format notes
