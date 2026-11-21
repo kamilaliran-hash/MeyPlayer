@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#5b5bf7">
+<title>MeyPlayer</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand"><img src="assets/logo.png" alt=""><span id="pageTitle">Folders</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnOpenFile" title="Open file" data-icon="file"></button>
+      <button class="icon-btn" id="btnSearch" title="Search" data-icon="search"></button>
+      <button class="icon-btn" id="btnSort" title="Sort / view" data-icon="sort"></button>
+    </div>
+  </header>
+  <div id="searchBar" class="hidden"><input id="searchInput" type="search" placeholder="Search videos and music"><button class="icon-btn" id="btnSearchClose" data-icon="close"></button></div>
+
+  <main id="view"></main>
+
+  <nav id="bottomnav">
+    <button data-tab="local" class="active"><i data-icon="folder"></i><span>Local</span></button>
+    <button data-tab="music"><i data-icon="music"></i><span>Music</span></button>
+    <button data-tab="playlists"><i data-icon="playlist"></i><span>Playlists</span></button>
+    <button data-tab="me"><i data-icon="user"></i><span>Me</span></button>
+  </nav>
+</div>
+
+<!-- PLAYER -->
+<section id="player" class="hidden" tabindex="0">
+  <div id="stage">
+    <video id="video" playsinline preload="metadata"></video>
+    <div id="audioArt"><img src="assets/logo.png" alt=""><div id="audioTitle"></div></div>
+    <div id="nightLayer"></div>
+    <div id="gestureHud" class="hidden"></div>
+    <div id="seekFlash" class="hidden"></div>
+  </div>
+  <div id="pTop" class="pctl">
+    <div class="ptitle-row">
+      <button class="icon-btn" id="pBack" data-icon="back"></button>
+      <div id="pTitle"></div>
+      <span id="pBadges"></span>
+      <button class="icon-btn" id="pMore" data-icon="dots"></button>
+    </div>
+    <div id="toolRow"></div>
+  </div>
+  <div id="pBottom" class="pctl">
+    <div class="seek-row">
+      <span id="tCur">00:00</span>
+      <div id="seekWrap">
+        <div id="seekBuf"></div><div id="seekFill"></div>
+        <div id="abA" class="abmark hidden"></div><div id="abB" class="abmark hidden"></div>
+        <div id="bmMarks"></div>
+        <input id="seek" type="range" min="0" max="1000" value="0" step="1">
+      </div>
+      <span id="tDur">00:00</span>
+    </div>
+    <div class="ctl-row">
+      <button class="icon-btn" id="pLock" data-icon="unlock" title="Lock"></button>
+      <div class="mid">
+        <button class="icon-btn big" id="pPrev" data-icon="prev" title="Previous"></button>
+        <button class="icon-btn huge" id="pPlay" data-icon="play" title="Play/Pause"></button>
+        <button class="icon-btn big" id="pNext" data-icon="next" title="Next"></button>
+      </div>
+      <button class="icon-btn" id="pAspect" data-icon="aspect" title="Aspect ratio"></button>
+      <button class="icon-btn" id="pPip" data-icon="pip" title="Picture in picture / Fullscreen"></button>
+    </div>
+  </div>
+  <button id="pUnlock" class="icon-btn hidden" data-icon="lock" title="Unlock"></button>
+</section>
+
+<div id="sheetBack" class="hidden"></div>
+<div id="sheet" class="hidden"><div class="grab"></div><div id="sheetBody"></div></div>
+<div id="toast"></div>
+
+<input type="file" id="inFiles" accept="video/*,audio/*,.mkv,.flac,.m4a" multiple hidden>
+<input type="file" id="inFolder" webkitdirectory multiple hidden>
+<input type="file" id="inSub" accept=".srt,.vtt,text/vtt" hidden>
+
+<script src="app.js"></script>
+</body>
+</html>

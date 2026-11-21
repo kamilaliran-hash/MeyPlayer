@@ -1,0 +1,7 @@
+{
+  "appId": "com.meyplayer.app",
+  "appName": "MeyPlayer",
+  "webDir": "www",
+  "android": { "allowMixedContent": true, "backgroundColor": "#f5f6fb" },
+  "plugins": { "StatusBar": { "overlaysWebView": false, "backgroundColor": "#5b5bf7" } }
+}
