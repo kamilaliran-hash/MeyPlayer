@@ -245,3 +245,22 @@ svg.ic{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;strok
   #volWrap{width:60px}
   #shotPrev{width:150px}
 }
+
+/* ===== v1.3: context menu, pinned bar, docked playlist ===== */
+.cm{position:fixed;z-index:120;min-width:250px;max-width:92vw;max-height:calc(100vh - 8px);overflow-y:auto;background:#3d3e40;color:#ececec;border:1px solid #6b6c70;
+  box-shadow:0 10px 30px rgba(0,0,0,.55);padding:4px 0;font-size:14px;user-select:none;font-family:"Segoe UI",Roboto,system-ui,sans-serif}
+.cmi{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;cursor:default;white-space:nowrap}
+.cmi .ck{width:22px;display:flex;justify-content:center}.cmi .ck svg.ic{width:15px;height:15px;stroke-width:2.4}
+.cmi .l{flex:1;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.cmi .k{color:#bdbdc2;font-size:13px}
+.cmi .ar{width:12px;font-size:10px;color:#e0e0e0;text-align:right}
+.cmi:hover,.cmi.act{background:#5b5bf7;color:#fff}.cmi:hover .k,.cmi.act .k{color:#e8e8ff}
+.cmi.dis{color:#8a8b90}.cmi.dis:hover{background:none;color:#8a8b90}
+.cmi.back{font-weight:600}.cmi.back svg.ic{width:16px;height:16px}
+.cms{height:1px;background:#6b6c70;margin:4px 8px 4px 34px}
+@media (max-width:600px){.cm{font-size:16px;min-width:min(300px,92vw)}.cmi{padding:10px 14px 10px 6px}}
+#player.pin-bar.hide-ctl #pBottom,#player.pl-open.hide-ctl #pBottom{opacity:1;pointer-events:auto}
+#player.pin-bar #pBottom #abBar{background:#1d1d21}
+#player.locked .pctl{opacity:0!important;pointer-events:none!important}
+#stage{transition:right .2s,bottom .2s}
+#player.pl-dock #plPanel{animation:none}

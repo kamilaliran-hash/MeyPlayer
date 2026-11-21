@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('meyAPI', {
   openFiles: () => ipcRenderer.invoke('open-files'),
   saveFile: (name, bytes) => ipcRenderer.invoke('save-file', name, bytes),
   showItem: p => ipcRenderer.invoke('show-item', p),
+  win: a => ipcRenderer.invoke('win', a),
   initialFiles: () => ipcRenderer.invoke('initial-files'),
   fileUrl: p => 'mey://media/?p=' + encodeURIComponent(p),
   pathForFile: f => { try { return webUtils.getPathForFile(f); } catch { return f.path || null; } },

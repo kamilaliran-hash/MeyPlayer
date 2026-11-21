@@ -79,7 +79,7 @@ app.whenReady().then(() => {
   });
   createWindow();
 });
-app.setAboutPanelOptions({ applicationName: 'MeyPlayer', applicationVersion: '1.2.0', copyright: 'Copyright © 2026 Kamil', authors: ['Kamil'] });
+app.setAboutPanelOptions({ applicationName: 'MeyPlayer', applicationVersion: '1.3.0', copyright: 'Copyright © 2026 Kamil', authors: ['Kamil'] });
 app.on('window-all-closed', () => app.quit());
 
 /* ---------- IPC ---------- */
@@ -126,4 +126,5 @@ ipcMain.handle('save-file', async (_e, name, bytes) => {
   return p;
 });
 ipcMain.handle('show-item', (_e, p) => shell.showItemInFolder(p));
+ipcMain.handle('win', (_e, a) => { if (!win) return false; if (a === 'quit') { app.quit(); return true; } if (a === 'top') { const v = !win.isAlwaysOnTop(); win.setAlwaysOnTop(v); return v; } return false; });
 ipcMain.handle('initial-files', () => pending.splice(0));

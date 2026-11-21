@@ -80,6 +80,8 @@ const I = {
   check:'<path d="M5 12l5 5L20 7"/>',
 };
 Object.assign(I, {
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  infoi:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/>',
   listbox:'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h8"/>',
   lockbar:'<rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   goggles:'<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M10 17l2-3 2 3"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/>',
@@ -95,7 +97,7 @@ Object.assign(I, {
 });
 const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24">${I[n]||''}</svg>`;
 const paintIcons = (root=document) => $$('[data-icon]', root).forEach(el => { if (!el.dataset.painted) { el.innerHTML = ic(el.dataset.icon) + el.innerHTML; el.dataset.painted = 1; }});
-const setIcon = (el, n) => { el.dataset.icon = n; el.innerHTML = ic(n); };
+const setIcon = (el, n) => { el.dataset.icon = n; el.dataset.painted = 1; el.innerHTML = ic(n); };
 
 /* ---------------- Storage ---------------- */
 const store = {
@@ -114,7 +116,7 @@ const S = {
   folders: store.get('folders', []),
   settings: Object.assign({ dark:false, resume:true, sort:'date', speed:1, bgPlay:false, night:false,
     tools:['night','custom','shuffle','loop','mute','sleep','ab','effect','eq','speed','shot','bg','rotate'],
-    eq:[0,0,0,0,0,0,0,0,0,0], eqPreset:'Normal', eqOn:true, fxOn:true, bass:0, virt:0, boost:100, reverbPreset:'None', toolHide:'', cueSize:22, disp:{b:100,c:100,s:100} }, store.get('settings', {})),
+    eq:[0,0,0,0,0,0,0,0,0,0], eqPreset:'Normal', eqOn:true, fxOn:true, bass:0, virt:0, boost:100, reverbPreset:'None', toolHide:'', pinBar:!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()), plOpen:false, cueSize:22, disp:{b:100,c:100,s:100} }, store.get('settings', {})),
 };
 const save = k => {
   const v = S[k]; store.set(k, v instanceof Set ? [...v] : v);
@@ -386,12 +388,12 @@ function renderMe() {
       <div class="row" id="mPriv"><div class="thumb sq" style="color:#2563eb">${ic('shield')}</div><div class="meta"><div class="name">Privacy folder</div><div class="sub">${S.hidden.size} hidden · PIN protected</div></div>${ic('chev')}</div>
       <div class="row" id="mSet"><div class="thumb sq" style="color:#64748b">${ic('gear')}</div><div class="meta"><div class="name">Settings</div><div class="sub">Theme, scan folders, playback</div></div>${ic('chev')}</div>
       <div class="row" id="mTut"><div class="thumb sq" style="color:#f59e0b">${ic('bulb')}</div><div class="meta"><div class="name">Gesture tutorial</div><div class="sub">Learn player controls</div></div>${ic('chev')}</div>
-      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.2.0 · Owner: Kamil</div></div>${ic('chev')}</div>
+      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.3.0 · Owner & developer: Kamil</div></div>${ic('chev')}</div>
     </div>`;
   $('#mPriv').onclick = () => { subView = 'privacy'; render(); };
   $('#mSet').onclick = () => { subView = 'settings'; render(); };
   $('#mTut').onclick = () => toast('Open any video, then tap ⋮ → Tutorial');
-  $('#mAbout').onclick = () => sheet(`<div class="sheet-h">About MeyPlayer</div><div style="padding:0 20px 10px;text-align:center"><img src="assets/logo.png" style="width:90px;border-radius:22px"><p>Version 1.2.0<br>Offline video & music player for Windows and Android.</p></div><table class="info"><tr><td>App owner</td><td>Kamil</td></tr><tr><td>Version</td><td>1.2.0</td></tr><tr><td>Platforms</td><td>Windows, Android</td></tr><tr><td>Running on</td><td>${Plat.name}</td></tr></table><p style="text-align:center;color:var(--sub);font-size:13px">© ${new Date().getFullYear()} Kamil. All rights reserved.</p>`);
+  $('#mAbout').onclick = () => aboutSheet();
 }
 let privUnlocked = false;
 function renderPrivacy() {
@@ -484,14 +486,14 @@ function sheet(html, bind, dark) {
   if (bind) bind($('#sheetBody'));
   P.keepControls = true;
 }
-function closeSheet() { $('#sheet').classList.add('hidden'); $('#sheetBack').classList.add('hidden'); P.keepControls = !$('#plPanel').classList.contains('hidden'); if (P.open) poke(); }
+function closeSheet() { $('#sheet').classList.add('hidden'); $('#sheetBack').classList.add('hidden'); P.keepControls = false; if (P.open) poke(); }
 $('#sheetBack').onclick = closeSheet;
 let toastT; function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2200); }
 
 /* ======================= PLAYER ======================= */
 const video = $('#video'), player = $('#player');
 const P = { open: false, media: null, queue: [], idx: 0, loop: 'off', shuffle: false, ab: [null, null], sleepAt: 0, sleepEnd: false, sleepT: null,
-  aspect: 0, rotate: 0, locked: false, keepControls: false, orient: 'auto', audio: null, subCues: [], subOffset: 0, track: null };
+  aspect: 0, rotate: 0, flip: false, filters: {}, onTop: false, locked: false, keepControls: false, orient: 'auto', audio: null, subCues: [], subOffset: 0, track: null };
 const ASPECTS = ['Fit', 'Fill', 'Stretch', '16:9', '4:3', '100%'];
 const TOOLS = {
   night: ['night', 'Night Mode', toggleNight, () => S.settings.night],
@@ -576,6 +578,7 @@ function openPlayer(m, list) {
   player.classList.remove('hidden'); P.open = true; player.focus();
   if (isAndroid && Cap.Plugins.StatusBar) Cap.Plugins.StatusBar.hide().catch(() => {});
   load(m);
+  if (S.settings.plOpen) togglePlaylist(true); else layout();
 }
 function load(m, autoplay = true) {
   saveProgress();
@@ -639,7 +642,7 @@ $('#seek').onchange = e => { seeking = false; video.currentTime = e.target.value
 /* controls visibility */
 let hideT;
 function poke() { player.classList.remove('hide-ctl'); clearTimeout(hideT); hideT = setTimeout(() => { if (!video.paused && !P.keepControls && !P.locked) player.classList.add('hide-ctl'); }, 3500); }
-function setLocked(v) { P.locked = v; if (v) $('#plPanel').classList.add('hidden'); $('#pUnlock').classList.toggle('hidden', !v); player.classList.toggle('hide-ctl', v); if (!v) poke(); }
+function setLocked(v) { P.locked = v; player.classList.toggle('locked', v); if (v) $('#plPanel').classList.add('hidden'); $('#pUnlock').classList.toggle('hidden', !v); player.classList.toggle('hide-ctl', v); if (!v) poke(); }
 $('#pLock').onclick = () => { setLocked(true); toast('Screen locked'); };
 $('#pUnlock').onclick = e => { e.stopPropagation(); setLocked(false); toast('Unlocked'); };
 $('#pBack').onclick = closePlayer;
@@ -658,10 +661,11 @@ function toggleFullscreen() { if (document.fullscreenElement) document.exitFulls
 
 /* gestures on stage */
 const stage = $('#stage'); let g = null, tapT = null, lastTap = 0, brightness = 1;
-stage.addEventListener('pointerdown', e => { if (P.locked) { $('#pUnlock').classList.remove('hidden'); return; } g = { x: e.clientX, y: e.clientY, t: video.currentTime, v: video.volume, b: brightness, mode: null, time: Date.now() }; });
+stage.addEventListener('pointerdown', e => { if (e.button !== 0) return; if (P.locked) { $('#pUnlock').classList.remove('hidden'); return; } g = { x: e.clientX, y: e.clientY, t: video.currentTime, v: video.volume, b: brightness, mode: null, time: Date.now() };
+  if (e.pointerType !== 'mouse') { const gg = g; g.lp = setTimeout(() => { if (g === gg && !gg.mode) { gg.lpFired = true; openMenu(gg.x, gg.y); } }, 600); } });
 stage.addEventListener('pointermove', e => {
   if (!g || P.locked) return; const dx = e.clientX - g.x, dy = e.clientY - g.y;
-  if (!g.mode) { if (Math.abs(dx) > 18) g.mode = 'seek'; else if (Math.abs(dy) > 18) g.mode = e.clientX < innerWidth / 2 ? 'bright' : 'vol'; else return; }
+  if (!g.mode) { if (Math.abs(dx) > 18 || Math.abs(dy) > 18) clearTimeout(g.lp); if (Math.abs(dx) > 18) g.mode = 'seek'; else if (Math.abs(dy) > 18) g.mode = e.clientX < innerWidth / 2 ? 'bright' : 'vol'; else return; }
   const hud = $('#gestureHud'); hud.classList.remove('hidden');
   if (g.mode === 'seek') { const nt = Math.max(0, Math.min(video.duration || 0, g.t + dx / innerWidth * 120)); g.nt = nt; hud.innerHTML = `${fmtT(nt)} / ${fmtT(video.duration)}<br><small>${dx > 0 ? '+' : ''}${Math.round(nt - g.t)}s</small>`; }
   if (g.mode === 'vol') { const v = Math.max(0, Math.min(1, g.v - dy / (innerHeight * .6))); video.volume = v; video.muted = false; hud.innerHTML = ic('vol') + Math.round(v * 100) + '%'; }
@@ -670,6 +674,7 @@ stage.addEventListener('pointermove', e => {
 stage.addEventListener('pointerup', e => {
   if (P.locked) { setTimeout(() => !P.locked || $('#pUnlock').classList.add('hidden'), 2500); return; }
   $('#gestureHud').classList.add('hidden');
+  if (g) clearTimeout(g.lp); if (g && g.lpFired) { g = null; return; }
   if (g && g.mode === 'seek' && g.nt != null) video.currentTime = g.nt;
   if (g && !g.mode) {
     const now = Date.now();
@@ -683,8 +688,21 @@ function seekBy(s, x) { video.currentTime = Math.max(0, Math.min(video.duration 
 player.addEventListener('mousemove', () => !P.locked && poke());
 player.addEventListener('wheel', e => { if (!P.open || P.locked || !$('#sheet').classList.contains('hidden')) return; video.volume = Math.max(0, Math.min(1, video.volume - Math.sign(e.deltaY) * .05)); const hud = $('#gestureHud'); hud.innerHTML = ic('vol') + Math.round(video.volume * 100) + '%'; hud.classList.remove('hidden'); clearTimeout(hud._t); hud._t = setTimeout(() => hud.classList.add('hidden'), 700); }, { passive: true });
 document.addEventListener('keydown', e => {
-  if (!P.open || e.target.tagName === 'INPUT') return;
+  if (e.target.tagName === 'INPUT') return;
   const k = e.key;
+  if (k === 'Escape' && cmStack.length) return closeMenu();
+  if (e.ctrlKey && (k === 'o' || k === 'O')) { e.preventDefault(); return quickOpen(); }
+  if (!P.open) return;
+  if (k === 'F2') { e.preventDefault(); return optionsSheet(); }
+  if (e.altKey && (k === 'j' || k === 'J')) { e.preventDefault(); return infoSheet(P.media, true); }
+  if (e.ctrlKey && (k === 'w' || k === 'W')) { e.preventDefault(); return closePlayer(); }
+  if (e.ctrlKey && k === 'ArrowRight') return seekBy(60, innerWidth);
+  if (e.ctrlKey && k === 'ArrowLeft') return seekBy(-60, 0);
+  if (k === 'Home') { video.currentTime = 0; return; }
+  if (k === 'PageDown') return next(1);
+  if (k === 'PageUp') return next(-1);
+  if (k === 'Enter') return toggleFullscreen();
+  if (k === 'b' || k === 'B') return addBookmark();
   if (k === ' ' || k === 'k') { e.preventDefault(); togglePlay(); }
   else if (k === 'ArrowRight') seekBy(e.shiftKey ? 30 : 10, innerWidth);
   else if (k === 'ArrowLeft') seekBy(e.shiftKey ? -30 : -10, 0);
@@ -701,7 +719,8 @@ document.addEventListener('keydown', e => {
 
 /* --- tool implementations --- */
 function applyNight() { player.classList.toggle('night', !!S.settings.night); }
-function applyDisplay() { const d = S.settings.disp; video.style.filter = `brightness(${d.b / 100 * brightness}) contrast(${d.c / 100}) saturate(${d.s / 100})`; }
+function applyDisplay() { const d = S.settings.disp, f = P.filters || {};
+  video.style.filter = `brightness(${d.b / 100 * brightness}) contrast(${d.c / 100 * (f.sharp ? 1.25 : 1)}) saturate(${d.s / 100 * (f.vivid ? 1.6 : 1)})` + (f.gray ? ' grayscale(1)' : '') + (f.sepia ? ' sepia(.8)' : '') + (f.invert ? ' invert(1)' : ''); }
 function applyAspect() {
   const a = ASPECTS[P.aspect], vw = video.videoWidth || 16, vh = video.videoHeight || 9;
   video.style.width = video.style.height = ''; video.style.objectFit = 'contain';
@@ -710,7 +729,7 @@ function applyAspect() {
   else if (a === '16:9' || a === '4:3') { const r = a === '16:9' ? 16 / 9 : 4 / 3; const W = stage.clientWidth, H = stage.clientHeight;
     let w = W, h = W / r; if (h > H) { h = H; w = H * r; } video.style.width = w + 'px'; video.style.height = h + 'px'; video.style.objectFit = 'fill'; }
   else if (a === '100%') { video.style.width = vw + 'px'; video.style.height = vh + 'px'; video.style.objectFit = 'none'; }
-  video.style.transform = P.rotate ? `rotate(${P.rotate}deg)` + (P.rotate % 180 ? ` scale(${Math.min(stage.clientHeight / stage.clientWidth, stage.clientWidth / stage.clientHeight)})` : '') : '';
+  video.style.transform = (P.rotate ? `rotate(${P.rotate}deg)` + (P.rotate % 180 ? ` scale(${Math.min(stage.clientHeight / stage.clientWidth, stage.clientWidth / stage.clientHeight)})` : '') : '') + (P.flip ? ' scaleX(-1)' : '');
 }
 addEventListener('resize', () => P.open && applyAspect());
 function toggleNight() { S.settings.night = !S.settings.night; save('settings'); applyNight(); toast('Night mode ' + (S.settings.night ? 'on — screen dimmed for eye comfort' : 'off')); }
@@ -732,7 +751,7 @@ function sleepMenu() {
     }, true);
 }
 /* A-B repeat: bar with A / B buttons above the seek bar */
-function toggleABBar() { const bar = $('#abBar'); bar.classList.toggle('hidden'); updateABBar(); }
+function toggleABBar() { const bar = $('#abBar'); bar.classList.toggle('hidden'); updateABBar(); layout(); }
 function updateABBar() {
   $('#abSetA').innerHTML = `<b>A</b> ${P.ab[0] != null ? fmtT(P.ab[0]) : '--:--'}`;
   $('#abSetB').innerHTML = `<b>B</b> ${P.ab[1] != null ? fmtT(P.ab[1]) : '--:--'}`;
@@ -744,7 +763,7 @@ $('#abSetA').onclick = e => { e.stopPropagation(); P.ab[0] = video.currentTime; 
 $('#abSetB').onclick = e => { e.stopPropagation(); if (P.ab[0] == null) P.ab[0] = 0; if (video.currentTime <= P.ab[0] + .5) return toast('Point B must be after point A');
   P.ab[1] = video.currentTime; video.currentTime = P.ab[0]; video.play(); updateABBar(); renderTools(); toast(`Repeating ${fmtT(P.ab[0])} – ${fmtT(P.ab[1])}`); };
 $('#abClear').onclick = e => { e.stopPropagation(); P.ab = [null, null]; updateABBar(); renderTools(); toast('A-B repeat cleared'); };
-$('#abClose').onclick = e => { e.stopPropagation(); P.ab = [null, null]; $('#abBar').classList.add('hidden'); drawMarks(); renderTools(); };
+$('#abClose').onclick = e => { e.stopPropagation(); P.ab = [null, null]; $('#abBar').classList.add('hidden'); drawMarks(); renderTools(); layout(); };
 function abRepeat() { toggleABBar(); }
 function drawMarks() {
   const d = video.duration || 0;
@@ -907,7 +926,7 @@ video.addEventListener('volumechange', syncVol); syncVol();
 function togglePlaylist(force) {
   const pan = $('#plPanel'); const show = force ?? pan.classList.contains('hidden');
   pan.classList.toggle('hidden', !show); $('#pList').classList.toggle('on', show);
-  if (show) { pan.style.bottom = $('#pBottom').offsetHeight + 'px'; renderPlaylistPanel(); } P.keepControls = show; poke();
+  if (show) renderPlaylistPanel(); S.settings.plOpen = show; save('settings'); layout(); poke();
 }
 function renderPlaylistPanel() {
   const pan = $('#plPanel'); if (pan.classList.contains('hidden')) return;
@@ -934,6 +953,181 @@ function addToQueue(paths) {
   renderPlaylistPanel(); toast('Added to playlist');
 }
 video.addEventListener('loadedmetadata', renderPlaylistPanel);
+
+
+/* ================= Right-click / ☰ menu (KMPlayer style) ================= */
+const VER = '1.3.0';
+function aboutSheet(dark) {
+  sheet(`<div class="sheet-h">About MeyPlayer</div>
+    <div style="padding:0 20px 6px;text-align:center"><img src="assets/logo.png" style="width:96px;border-radius:24px;box-shadow:0 8px 24px rgba(80,60,255,.35)">
+    <div style="font-size:22px;font-weight:800;margin-top:10px">MeyPlayer</div>
+    <div style="color:var(--sub);font-size:14px">Version ${VER}</div>
+    <p style="font-size:14px">Offline video &amp; music player for Windows and Android.</p></div>
+    <table class="info"><tr><td>Owner</td><td><b>Kamil</b></td></tr><tr><td>Developer</td><td><b>Kamil</b></td></tr>
+    <tr><td>Version</td><td>${VER}</td></tr><tr><td>Platforms</td><td>Windows (installer &amp; portable), Android</td></tr>
+    <tr><td>Running on</td><td>${Plat.name}</td></tr></table>
+    <p style="text-align:center;color:var(--sub);font-size:13px">© ${new Date().getFullYear()} Kamil. All rights reserved.</p>`, null, dark);
+}
+function shortcutsSheet() {
+  const k = [['Space', 'Play / Pause'], ['← / →', 'Back / forward 10 s'], ['Shift + ← / →', 'Back / forward 30 s'], ['Ctrl + ← / →', 'Back / forward 1 min'], ['↑ / ↓', 'Volume'],
+    ['Home', 'Go to beginning'], ['Page Up / Page Down', 'Previous / next file'], ['Enter or F', 'Fullscreen'], ['M', 'Mute'], ['S', 'Screenshot'], ['B', 'Add bookmark'],
+    ['L', 'Show / hide playlist'], ['Ctrl + O', 'Quick open file'], ['F2', 'Options'], ['Alt + J', 'Properties'], ['Ctrl + W', 'Close video'], ['Right-click', 'Main menu'], ['Mouse wheel', 'Volume']];
+  sheet(`<div class="sheet-h">Keyboard shortcuts</div><table class="info">${k.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`, null, true);
+}
+function optionsSheet() {
+  const st = S.settings; const row = (id, label, on) => `<div class="opt" data-o="${id}">${label}<span class="switch r ${on ? 'on' : ''}"></span></div>`;
+  sheet(`<div class="sheet-h">Options</div>
+    ${row('pinBar', 'Always show bottom control bar', st.pinBar)}${row('plOpen', 'Keep playlist open', st.plOpen)}
+    ${row('resume', 'Resume where I left off', st.resume)}${row('bgPlay', 'Keep playing when app is minimised', st.bgPlay)}
+    ${row('night', 'Night mode', st.night)}${row('dark', 'Dark theme in library', st.dark)}
+    <div class="opt" id="oTools">${ic('edit')}Customise top buttons…</div>`,
+    b => { $$('[data-o]', b).forEach(o => o.onclick = () => { const k = o.dataset.o; st[k] = !st[k]; save('settings'); $('.switch', o).classList.toggle('on', st[k]);
+        if (k === 'plOpen') togglePlaylist(st[k]); if (k === 'night') applyNight(); layout(); renderTools(); });
+      $('#oTools', b).onclick = () => { closeSheet(); customiseTools(); }; }, true);
+}
+function goToTime() {
+  const v = prompt('Go to time (hh:mm:ss or mm:ss)', fmtHMS(video.currentTime)); if (!v) return;
+  const p = v.split(':').map(Number); const s = p.reduce((a, x) => a * 60 + x, 0); if (isFinite(s)) video.currentTime = Math.min(s, video.duration || s);
+}
+async function copyFrame() {
+  try { const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight; c.getContext('2d').drawImage(video, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png')); await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast('Frame copied to clipboard'); }
+  catch (e) { toast('Copy not supported here'); }
+}
+function exitApp() { if (isElectron && meyAPI.win) meyAPI.win('quit'); else if (isAndroid && Cap.Plugins.App) Cap.Plugins.App.exitApp(); else closePlayer(); }
+function quickOpen() { $('#btnOpenFile').click(); }
+const sep = '-';
+const chk = (label, on, action, key) => ({ label, check: !!on, action, key });
+function mainMenu() {
+  const m = P.media, d = video.duration || 0, st = S.settings;
+  const tracks = (list, name, apply) => list && list.length ? [...list].map((t, i) => chk(t.label || t.language || `${name} ${i + 1}`, t.enabled ?? t.selected, () => apply(i))) : [chk(`${name} 1 (default)`, true), { label: 'No other tracks in this file', disabled: true }];
+  return [
+    { label: 'Quick Open File…', key: 'Ctrl+O', action: quickOpen },
+    { label: 'File', sub: () => [
+      { label: 'Open File(s)…', key: 'Ctrl+O', action: quickOpen },
+      { label: 'Open Folder…', action: async () => { if (isElectron) { const f = await meyAPI.pickFolder(); if (!f) return; if (!S.folders.includes(f)) { S.folders.push(f); save('folders'); } await rescan(true);
+          const items = sorted(LIB.filter(x => x.folder === f || x.folder.startsWith(f))); if (items[0]) { P.queue = items; P.idx = 0; load(items[0]); renderPlaylistPanel(); } } else $('#inFolder').click(); } },
+      { label: 'Open Subtitle…', action: () => $('#inSub').click() }, sep,
+      { label: isElectron ? 'Show in Folder' : 'Share…', action: () => Plat.share(m) },
+      { label: 'Add to Favourites', check: S.fav.has(m.path), action: () => { toggleFav(m); } },
+      { label: 'Close', key: 'Ctrl+W', action: closePlayer } ] },
+    { label: 'Recent Files', sub: () => { const r = S.history.map(h => byPath(h.path)).filter(Boolean).slice(0, 12);
+      return r.length ? [...r.map(x => chk(x.name, x === m, () => openPlayer(x, sorted(visible().filter(y => y.folder === x.folder && y.kind === x.kind))))), sep, { label: 'Clear Recent Files', action: () => { S.history = []; save('history'); toast('Recent files cleared'); } }] : [{ label: '(empty)', disabled: true }]; } },
+    sep,
+    { label: 'Play', sub: () => [
+      { label: video.paused ? 'Play' : 'Pause', key: 'Space', action: togglePlay }, { label: 'Stop', action: () => $('#pStop').click() }, sep,
+      { label: 'Previous File', key: 'PgUp', action: () => next(-1) }, { label: 'Next File', key: 'PgDn', action: () => next(1) }, sep,
+      { label: 'Speed', sub: () => [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4].map(s => chk(s + 'X' + (s === 1 ? ' (normal)' : ''), video.playbackRate === s, () => setSpeed(s))) },
+      { label: 'Repeat', sub: () => [chk('Off', P.loop === 'off', () => { P.loop = 'off'; }), chk('Repeat All', P.loop === 'all', () => { P.loop = 'all'; }), chk('Repeat One', P.loop === 'one', () => { P.loop = 'one'; })] },
+      chk('Shuffle', P.shuffle, () => { P.shuffle = !P.shuffle; }),
+      { label: 'A-B Repeat', sub: () => [{ label: 'Set Start Point (A)', action: () => { $('#abBar').classList.remove('hidden'); $('#abSetA').click(); } },
+        { label: 'Set End Point (B)', action: () => { $('#abBar').classList.remove('hidden'); $('#abSetB').click(); } }, { label: 'Clear A-B Repeat', action: () => $('#abClose').click() }] },
+      { label: 'Sleep Timer…', action: sleepMenu } ] },
+    { label: 'View', sub: () => [
+      chk('Fullscreen', !!document.fullscreenElement, toggleFullscreen, 'Enter'),
+      ...(document.pictureInPictureEnabled && !isAndroid ? [chk('Picture in Picture', !!document.pictureInPictureElement, () => $('#pPip').click())] : []),
+      ...(isElectron && meyAPI.win ? [chk('Always on Top', P.onTop, async () => { P.onTop = await meyAPI.win('top'); })] : []), sep,
+      chk('Show Playlist', !$('#plPanel').classList.contains('hidden'), () => togglePlaylist(), 'L'),
+      chk('Always Show Control Bar', st.pinBar, () => { st.pinBar = !st.pinBar; save('settings'); layout(); }),
+      chk('Show Top Buttons', !st.toolHide, () => hideTools(st.toolHide ? '' : 'right')), sep,
+      chk('Night Mode', st.night, toggleNight), { label: 'Lock Screen', action: () => setLocked(true) } ] },
+    sep,
+    { label: 'Video', sub: () => [
+      { label: 'Aspect Ratio', sub: () => ASPECTS.map((a, i) => chk(a, P.aspect === i, () => { P.aspect = i; applyAspect(); })) },
+      { label: 'Rotate 90°', action: () => { P.rotate = (P.rotate + 90) % 360; applyAspect(); } }, chk('Flip Horizontal', P.flip, () => { P.flip = !P.flip; applyAspect(); }),
+      { label: 'Reset Rotation & Flip', action: () => { P.rotate = 0; P.flip = false; applyAspect(); } }, sep,
+      { label: 'Display Settings…', action: displayMenu } ] },
+    { label: 'Audio', sub: () => [
+      chk('Mute', video.muted, () => { video.muted = !video.muted; }, 'M'),
+      { label: 'Volume Up', key: '↑', action: () => { video.volume = Math.min(1, video.volume + .1); } }, { label: 'Volume Down', key: '↓', action: () => { video.volume = Math.max(0, video.volume - .1); } }, sep,
+      { label: 'Equalizer…', action: eqMenu }, { label: 'Audio Effects…', action: effectMenu } ] },
+    { label: 'Subtitles', sub: () => [
+      { label: 'Load Subtitle…', action: () => $('#inSub').click() },
+      chk('Show Subtitles', P.track && P.track.mode === 'showing', () => { if (P.track) P.track.mode = P.track.mode === 'showing' ? 'hidden' : 'showing'; else toast('No subtitle loaded'); }), sep,
+      { label: 'Increase Size', action: () => { S.settings.cueSize = Math.min(60, S.settings.cueSize + 2); player.style.setProperty('--cue-size', S.settings.cueSize + 'px'); save('settings'); } },
+      { label: 'Decrease Size', action: () => { S.settings.cueSize = Math.max(10, S.settings.cueSize - 2); player.style.setProperty('--cue-size', S.settings.cueSize + 'px'); save('settings'); } },
+      { label: 'Delay +0.5 s', action: () => { P.subOffset += .5; rebuildCues(); toast('Subtitle delay ' + P.subOffset.toFixed(1) + ' s'); } },
+      { label: 'Delay −0.5 s', action: () => { P.subOffset -= .5; rebuildCues(); toast('Subtitle delay ' + P.subOffset.toFixed(1) + ' s'); } },
+      { label: 'Subtitle Settings…', action: subtitleMenu } ] },
+    sep,
+    { label: 'Video Track', sub: () => tracks(video.videoTracks, 'Video track', i => [...video.videoTracks].forEach((t, j) => t.selected = i === j)) },
+    { label: 'Audio Track', sub: () => tracks(video.audioTracks, 'Audio track', i => [...video.audioTracks].forEach((t, j) => t.enabled = i === j)) },
+    { label: 'Subtitle Track', sub: () => [chk('Off', !P.track || P.track.mode !== 'showing', () => { [...video.textTracks].forEach(t => t.mode = 'disabled'); }),
+      ...[...video.textTracks].map(t => chk(t.label || 'Subtitle', t.mode === 'showing', () => { [...video.textTracks].forEach(x => x.mode = x === t ? 'showing' : 'disabled'); P.track = t; }))] },
+    sep,
+    { label: 'Navigate', sub: () => [
+      { label: 'Forward 10 s', key: '→', action: () => seekBy(10, innerWidth) }, { label: 'Back 10 s', key: '←', action: () => seekBy(-10, 0) },
+      { label: 'Forward 1 min', key: 'Ctrl+→', action: () => seekBy(60, innerWidth) }, { label: 'Back 1 min', key: 'Ctrl+←', action: () => seekBy(-60, 0) }, sep,
+      { label: 'Go to Beginning', key: 'Home', action: () => { video.currentTime = 0; } }, { label: 'Go to Time…', action: goToTime }, sep,
+      { label: 'Add Bookmark', key: 'B', action: addBookmark },
+      { label: 'Bookmarks', sub: () => { const b = (S.bookmarks[m.path] || []).sort((x, y) => x - y); return b.length ? b.map(t => ({ label: fmtHMS(t), action: () => { video.currentTime = t; } })) : [{ label: '(none)', disabled: true }]; } } ] },
+    { label: 'Capture', sub: () => [
+      { label: 'Save Screenshot', key: 'S', action: screenshot }, { label: 'Copy Frame to Clipboard', action: copyFrame }, sep,
+      { label: 'Cut Clip…', action: cutMenu } ] },
+    { label: 'Filters', sub: () => [
+      ...[['gray', 'Grayscale'], ['sepia', 'Sepia'], ['invert', 'Invert Colours'], ['vivid', 'Vivid Colours'], ['sharp', 'Sharpen (contrast)']].map(([k, l]) => chk(l, P.filters[k], () => { P.filters[k] = !P.filters[k]; applyDisplay(); })),
+      chk('Night Mode', st.night, toggleNight), sep,
+      { label: 'Brightness / Contrast…', action: displayMenu }, { label: 'Reset Filters', action: () => { P.filters = {}; S.settings.disp = { b: 100, c: 100, s: 100 }; brightness = 1; save('settings'); applyDisplay(); } } ] },
+    sep,
+    { label: 'Playlists', sub: () => [
+      chk('Show Playlist', !$('#plPanel').classList.contains('hidden'), () => togglePlaylist(), 'L'),
+      { label: 'Save Current List as Playlist…', action: () => $('#plSave').click() }, { label: 'Add Current File to Playlist…', action: () => playlistMenu(m, true) }, sep,
+      ...(Object.keys(S.playlists).length ? Object.keys(S.playlists).map(n => ({ label: n, action: () => { const items = listFor('pl:' + n); if (items[0]) { openPlayer(items[0], items); togglePlaylist(true); } else toast('Playlist is empty'); } })) : [{ label: '(no saved playlists)', disabled: true }]) ] },
+    sep,
+    { label: 'Options…', key: 'F2', action: optionsSheet },
+    { label: 'Properties', key: 'Alt+J', action: () => infoSheet(m, true) },
+    sep,
+    { label: 'Exit', key: isElectron ? 'Alt+F4' : '', action: exitApp },
+    { label: 'Favorites', sub: () => [chk(S.fav.has(m.path) ? 'Remove Current from Favourites' : 'Add Current to Favourites', false, () => toggleFav(m)), sep,
+      ...([...S.fav].map(byPath).filter(Boolean).slice(0, 15).map(x => chk(x.name, x === m, () => openPlayer(x, listFor('fav'))))) ] },
+    { label: 'Help', sub: () => [{ label: 'Keyboard Shortcuts…', action: shortcutsSheet }, { label: 'Gesture Tutorial', action: tutorial }, sep, { label: 'About MeyPlayer…', action: () => aboutSheet(true) }] },
+  ];
+}
+let cmStack = [];
+function closeMenu() { cmStack.forEach(e => e.remove()); cmStack = []; }
+function openMenu(x, y, above) { closeMenu(); if (!P.media) return; buildMenu(mainMenu(), x, y, 0); if (above != null && innerWidth >= 600) { const el = cmStack[0]; el.style.top = Math.max(4, above - el.offsetHeight - 6) + 'px'; } }
+function buildMenu(items, x, y, level, parentRow, title) {
+  while (cmStack.length > level) cmStack.pop().remove();
+  const narrow = innerWidth < 600;
+  const el = document.createElement('div'); el.className = 'cm';
+  el.innerHTML = (narrow && level ? `<div class="cmi back" data-back>${ic('chevl')}<span class="l">${esc(title)}</span></div><div class="cms"></div>` : '') +
+    items.map((it, i) => it === sep ? '<div class="cms"></div>' : `<div class="cmi ${it.disabled ? 'dis' : ''}" data-i="${i}"><span class="ck">${it.check ? ic('check') : ''}</span><span class="l">${esc(it.label)}</span><span class="k">${it.key || ''}</span><span class="ar">${it.sub ? '▶' : ''}</span></div>`).join('');
+  document.body.appendChild(el); cmStack.push(el);
+  // position
+  const W = el.offsetWidth, H = el.offsetHeight;
+  if (narrow) { if (level) { const p = cmStack[level - 1]; p.style.visibility = 'hidden'; x = parseFloat(p.style.left); y = parseFloat(p.style.top); } }
+  else if (parentRow) { const r = parentRow.getBoundingClientRect(); x = r.right - 2; y = r.top - 6; if (x + W > innerWidth - 4) x = r.left - W + 2; }
+  x = Math.max(4, Math.min(x, innerWidth - W - 4)); y = Math.max(4, Math.min(y, innerHeight - H - 4));
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  const back = $('[data-back]', el); if (back) back.onclick = e => { e.stopPropagation(); cmStack.pop().remove(); cmStack[cmStack.length - 1].style.visibility = ''; };
+  let hoverT;
+  $$('.cmi[data-i]', el).forEach(row => {
+    const it = items[+row.dataset.i]; if (it.disabled) return;
+    const openSub = () => { $$('.cmi.act', el).forEach(r => r.classList.remove('act')); row.classList.add('act'); buildMenu(it.sub(), 0, 0, level + 1, row, it.label); };
+    row.onmouseenter = () => { if (narrow) return; clearTimeout(hoverT); hoverT = setTimeout(() => { if (it.sub) openSub(); else { while (cmStack.length > level + 1) cmStack.pop().remove(); $$('.cmi.act', el).forEach(r => r.classList.remove('act')); } }, 110); };
+    row.onclick = e => { e.stopPropagation(); if (it.sub) return openSub(); closeMenu(); try { it.action && it.action(); } finally { renderTools(); syncVol(); poke(); } };
+  });
+}
+document.addEventListener('pointerdown', e => { if (cmStack.length && !e.target.closest('.cm')) closeMenu(); }, true);
+addEventListener('blur', closeMenu); addEventListener('resize', closeMenu);
+stage.addEventListener('contextmenu', e => { e.preventDefault(); if (!P.locked) openMenu(e.clientX, e.clientY); });
+$('#pMenu').onclick = e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); if (cmStack.length) return closeMenu(); openMenu(r.left, r.top, r.top); };
+$('#pInfo').onclick = () => aboutSheet(true);
+$('#btnAbout').onclick = () => aboutSheet();
+
+/* ---------- layout: pinned control bar & docked playlist ---------- */
+function layout() {
+  if (!P.open) return;
+  const st = S.settings, pl = !$('#plPanel').classList.contains('hidden'), wide = innerWidth >= 900;
+  player.classList.toggle('pin-bar', !!st.pinBar); player.classList.toggle('pl-open', pl); player.classList.toggle('pl-dock', pl && wide);
+  const bh = $('#pBottom').offsetHeight;
+  stage.style.bottom = st.pinBar ? bh + 'px' : '0';
+  stage.style.right = $('#pTop').style.right = pl && wide ? $('#plPanel').offsetWidth + 'px' : '0';
+  $('#plPanel').style.bottom = bh + 'px';
+  $('#plPanel').style.top = pl && !wide ? $('.ptitle-row').getBoundingClientRect().bottom + 'px' : '0';
+  applyAspect();
+}
+addEventListener('resize', () => P.open && layout());
 
 /* --- More menu --- */
 function moreMenu() {
@@ -1007,6 +1201,7 @@ function displayMenu() {
       $('#dReset', b).onclick = () => { S.settings.disp = { b: 100, c: 100, s: 100 }; brightness = 1; applyDisplay(); save('settings'); closeSheet(); displayMenu(); };
       $('#dNight', b).onclick = () => { TOOLS.night[2](); renderTools(); closeSheet(); }; }, true);
 }
+function addBookmark() { const k = P.media.path; (S.bookmarks[k] = S.bookmarks[k] || []).push(Math.floor(video.currentTime)); save('bookmarks'); drawMarks(); toast('Bookmark added at ' + fmtHMS(video.currentTime)); }
 function bookmarkMenu() {
   const k = P.media.path; const list = (S.bookmarks[k] || []).sort((a, b) => a - b);
   sheet(`<div class="sheet-h">Bookmarks<button class="chip" id="bmAdd">+ Add at ${fmtT(video.currentTime)}</button></div>` +
