@@ -388,7 +388,7 @@ function renderMe() {
       <div class="row" id="mPriv"><div class="thumb sq" style="color:#2563eb">${ic('shield')}</div><div class="meta"><div class="name">Privacy folder</div><div class="sub">${S.hidden.size} hidden · PIN protected</div></div>${ic('chev')}</div>
       <div class="row" id="mSet"><div class="thumb sq" style="color:#64748b">${ic('gear')}</div><div class="meta"><div class="name">Settings</div><div class="sub">Theme, scan folders, playback</div></div>${ic('chev')}</div>
       <div class="row" id="mTut"><div class="thumb sq" style="color:#f59e0b">${ic('bulb')}</div><div class="meta"><div class="name">Gesture tutorial</div><div class="sub">Learn player controls</div></div>${ic('chev')}</div>
-      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.3.1 · Owner & developer: Kamil</div></div>${ic('chev')}</div>
+      <div class="row" id="mAbout"><div class="thumb sq" style="color:var(--accent)">${ic('info')}</div><div class="meta"><div class="name">About</div><div class="sub">MeyPlayer 1.3.2 · Owner & developer: Kamil</div></div>${ic('chev')}</div>
     </div>`;
   $('#mPriv').onclick = () => { subView = 'privacy'; render(); };
   $('#mSet').onclick = () => { subView = 'settings'; render(); };
@@ -641,7 +641,7 @@ $('#seek').onchange = e => { seeking = false; video.currentTime = e.target.value
 
 /* controls visibility */
 let hideT;
-function poke() { player.classList.remove('hide-ctl'); clearTimeout(hideT); hideT = setTimeout(() => { if (!video.paused && !P.keepControls && !P.locked) player.classList.add('hide-ctl'); }, 3500); }
+function poke() { player.classList.remove('hide-ctl'); clearTimeout(hideT); hideT = setTimeout(() => { if (!video.paused && !P.keepControls && !P.locked) player.classList.add('hide-ctl'); }, isAndroid ? 5000 : 3500); }
 function setLocked(v) { P.locked = v; player.classList.toggle('locked', v); if (v) $('#plPanel').classList.add('hidden'); $('#pUnlock').classList.toggle('hidden', !v); player.classList.toggle('hide-ctl', v); if (!v) poke(); }
 $('#pLock').onclick = () => { setLocked(true); toast('Screen locked'); };
 $('#pUnlock').onclick = e => { e.stopPropagation(); setLocked(false); toast('Unlocked'); };
@@ -661,7 +661,7 @@ function toggleFullscreen() { if (document.fullscreenElement) document.exitFulls
 
 /* gestures on stage */
 const stage = $('#stage'); let g = null, tapT = null, lastTap = 0, brightness = 1;
-stage.addEventListener('pointerdown', e => { if (e.button !== 0) return; if (P.locked) { $('#pUnlock').classList.remove('hidden'); return; } g = { x: e.clientX, y: e.clientY, t: video.currentTime, v: video.volume, b: brightness, mode: null, time: Date.now() };
+stage.addEventListener('pointerdown', e => { if (e.button !== 0) return; if (P.locked) { $('#pUnlock').classList.remove('hidden'); return; } g = { x: e.clientX, y: e.clientY, t: video.currentTime, v: video.volume, b: brightness, mode: null, time: Date.now(), wasHidden: player.classList.contains('hide-ctl') };
   if (e.pointerType !== 'mouse') { const gg = g; g.lp = setTimeout(() => { if (g === gg && !gg.mode) { gg.lpFired = true; openMenu(gg.x, gg.y); } }, 600); } });
 stage.addEventListener('pointermove', e => {
   if (!g || P.locked) return; const dx = e.clientX - g.x, dy = e.clientY - g.y;
@@ -678,14 +678,14 @@ stage.addEventListener('pointerup', e => {
   if (g && g.mode === 'seek' && g.nt != null) video.currentTime = g.nt;
   if (g && !g.mode) {
     const now = Date.now();
-    if (now - lastTap < 300) { clearTimeout(tapT); lastTap = 0; const third = e.clientX / innerWidth;
+    if (now - lastTap < 260) { clearTimeout(tapT); lastTap = 0; const third = e.clientX / innerWidth;
       if (third < .35) seekBy(-10, e.clientX); else if (third > .65) seekBy(10, e.clientX); else togglePlay();
-    } else { lastTap = now; tapT = setTimeout(() => { if (player.classList.contains('hide-ctl')) poke(); else if (!video.paused) player.classList.add('hide-ctl'); }, 300); }
+    } else { lastTap = now; const wasHidden = g.wasHidden; tapT = setTimeout(() => { if (wasHidden) poke(); else { clearTimeout(hideT); player.classList.add('hide-ctl'); } }, 260); }
   }
   g = null;
 });
 function seekBy(s, x) { video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + s)); const f = $('#seekFlash'); f.textContent = (s > 0 ? '+' : '') + s + 's'; f.style.left = x < innerWidth / 2 ? '12%' : 'auto'; f.style.right = x < innerWidth / 2 ? 'auto' : '12%'; f.classList.remove('hidden'); clearTimeout(f._t); f._t = setTimeout(() => f.classList.add('hidden'), 600); }
-player.addEventListener('mousemove', () => !P.locked && poke());
+player.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && !P.locked) poke(); });
 player.addEventListener('wheel', e => { if (!P.open || P.locked || !$('#sheet').classList.contains('hidden')) return; video.volume = Math.max(0, Math.min(1, video.volume - Math.sign(e.deltaY) * .05)); const hud = $('#gestureHud'); hud.innerHTML = ic('vol') + Math.round(video.volume * 100) + '%'; hud.classList.remove('hidden'); clearTimeout(hud._t); hud._t = setTimeout(() => hud.classList.add('hidden'), 700); }, { passive: true });
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -956,7 +956,7 @@ video.addEventListener('loadedmetadata', renderPlaylistPanel);
 
 
 /* ================= Right-click / ☰ menu (KMPlayer style) ================= */
-const VER = '1.3.1';
+const VER = '1.3.2';
 function aboutSheet(dark) {
   sheet(`<div class="sheet-h">About MeyPlayer</div>
     <div style="padding:0 20px 6px;text-align:center"><img src="assets/logo.png" style="width:96px;border-radius:24px;box-shadow:0 8px 24px rgba(80,60,255,.35)">
